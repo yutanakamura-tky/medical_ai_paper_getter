@@ -1,5 +1,5 @@
 import bs4
-import urllib.request as ur
+import urllib
 
 def mednlp(conference_and_year, verbose=True):
 	# conference_and_year: list or tuple
@@ -23,8 +23,18 @@ def mednlp(conference_and_year, verbose=True):
 	
 	# get html content
 	url = 'https://aclweb.org/anthology/events/{}-{}'.format(conference.lower(), str(year))
-	res_obj = ur.urlopen(url)
-	html = res_obj.read()
+
+	try:
+		with urllib.request.urlopen(url) as res:
+			mednlp_parse(res, verbose)
+	except urllib.error.HTTPError as err:
+		print('An error occurred: {} {}'.format(err.code, err.reason))
+	except urllib.error.URLError as err:
+		print('An error occurred: {}'.format(err.reason))
+			
+
+def mednlp_parse(res, verbose=True):
+	html = res.read()
 	soup = bs4.BeautifulSoup(html, 'html5lib')
 
 	# query
