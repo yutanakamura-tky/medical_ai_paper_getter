@@ -1,7 +1,8 @@
 import bs4
 import urllib
+import pyperclip
 
-def mednlp(conference_and_year, verbose=True):
+def mednlp(conference_and_year, verbose=True, ashtml=False):
 	# conference_and_year: list or tuple
 	#   (conference, year) where:
 	#
@@ -26,14 +27,14 @@ def mednlp(conference_and_year, verbose=True):
 
 	try:
 		with urllib.request.urlopen(url) as res:
-			mednlp_parse(res, verbose)
+			mednlp_parse(res, verbose, ashtml)
 	except urllib.error.HTTPError as err:
 		print('An error occurred: {} {}'.format(err.code, err.reason))
 	except urllib.error.URLError as err:
 		print('An error occurred: {}'.format(err.reason))
 			
 
-def mednlp_parse(res, verbose=True):
+def mednlp_parse(res, verbose=True, ashtml=False):
 	html = res.read()
 	soup = bs4.BeautifulSoup(html, 'html5lib')
 
@@ -62,7 +63,10 @@ def mednlp_parse(res, verbose=True):
 	if verbose:
 		print('\n\n'.join(['\n'.join(r) for r in result]))
 
-	return result
+	if not ashtml:
+		return result
+	else:
+		pyperclip.copy('\n\n'.join(['<p><a href="{}">{}</a></p>'.format(r[1],r[0]) for r in result]))
 
 if __name__ == '__main__':
 	mednlp(input("input conference name and year (e.g. 'naacl 2019')").split())
