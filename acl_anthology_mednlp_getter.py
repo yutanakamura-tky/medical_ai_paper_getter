@@ -66,7 +66,7 @@ def mednlp_parse(res, verbose=True, ashtml=False):
 	if not ashtml:
 		return result
 	else:
-		pyperclip.copy('\n\n'.join(['<p><a href="{}">{}</a></p>'.format(r[1],r[0]) for r in result]))
+		pyperclip.copy('\n'.join(['<p><a href="{}">{}</a></p>'.format(r[1],r[0]) for r in result]))
 
 if __name__ == '__main__':
 	mednlp(input("Input conference name and year (e.g. 'naacl 2019') : ").split(), ashtml=bool(input('Would you like HTML-like output copied on clipboard? (True/False) : ')))
