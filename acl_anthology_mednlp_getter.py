@@ -52,7 +52,7 @@ def mednlp_parse(res, verbose=True, ashtml=False):
 			for query in queries:
 				if not skip:
 					for q in (query, query.upper(), query.capitalize()):
-						if (q in title) and (not skip):
+						if (((''+q) in title) or title.startswith(q)) and (not skip):
 							link = tag.attrs['href']
 							if link.startswith('/anthology/paper'):
 								result.append([title, 'https://aclweb.org'+link])
