@@ -27,14 +27,14 @@ def mednlp(conference_and_year, verbose=True, toclipboard=False):
 
 	try:
 		with urllib.request.urlopen(url) as res:
-			mednlp_parse(res, verbose)
+			mednlp_parse(res, verbose, toclipboard)
 	except urllib.error.HTTPError as err:
 		print('An error occurred: {} {}'.format(err.code, err.reason))
 	except urllib.error.URLError as err:
 		print('An error occurred: {}'.format(err.reason))
 			
 
-def mednlp_parse(res, verbose=True):
+def mednlp_parse(res, verbose=True, toclipboard=False):
 	html = res.read()
 	soup = bs4.BeautifulSoup(html, 'html5lib')
 
