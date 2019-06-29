@@ -2,8 +2,9 @@ import bs4
 import pyperclip
 import sys
 import urllib
+import pyperclip
 
-def mednlp(conference_and_year, verbose=True, toclipboard=False):
+def mednlp(conference_and_year, verbose=True, ashtml=False):
 	# conference_and_year: list or tuple
 	#   (conference, year) where:
 	#
@@ -29,14 +30,14 @@ def mednlp(conference_and_year, verbose=True, toclipboard=False):
 	print('Connecting...')
 	try:
 		with urllib.request.urlopen(url) as res:
-			mednlp_parse(res, verbose, toclipboard)
+			mednlp_parse(res, verbose, ashtml)
 	except urllib.error.HTTPError as err:
 		print('An error occurred: {} {}'.format(err.code, err.reason))
 	except urllib.error.URLError as err:
 		print('An error occurred: {}'.format(err.reason))
 			
 
-def mednlp_parse(res, verbose=True, toclipboard=False):
+def mednlp_parse(res, verbose=True, ashtml=False):
 	html = res.read()
 	soup = bs4.BeautifulSoup(html, 'html5lib')
 
@@ -58,7 +59,7 @@ def mednlp_parse(res, verbose=True, toclipboard=False):
 			for query in queries:
 				if not skip:
 					for q in (query, query.upper(), query.capitalize()):
-						if (((''+q) in title) or title.startswith(q)) and (not skip):
+						if (((' '+q) in title) or title.startswith(q)) and (not skip):
 							link = tag.attrs['href']
 							if link.startswith('/anthology/paper'):
 								result.append([title, 'https://aclweb.org'+link])
@@ -80,7 +81,10 @@ def mednlp_parse(res, verbose=True, toclipboard=False):
 	if toclipboard:
 		pyperclip.copy('\n\n'.join(['\n'.join(r) for r in result]))
 
-	return result
+	if not ashtml:
+		return result
+	else:
+		pyperclip.copy('\n'.join(['<p><a href="{}">{}</a></p>'.format(r[1],r[0]) for r in result]))
 
 if __name__ == '__main__':
-	mednlp(input("Input conference name and year (e.g. 'naacl 2019') : ").split(), toclipboard=bool(input('Copy result on clipboard? (True/False) : ')))
+	mednlp(input("Input conference name and year (e.g. 'naacl 2019') : ").split(), ashtml=bool(input('Would you like HTML-like output copied on clipboard? (True/False) : ')))
