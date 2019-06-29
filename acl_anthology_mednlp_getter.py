@@ -1,6 +1,7 @@
 import bs4
-import urllib
 import pyperclip
+import sys
+import urllib
 
 def mednlp(conference_and_year, verbose=True, toclipboard=False):
 	# conference_and_year: list or tuple
@@ -43,9 +44,13 @@ def mednlp_parse(res, verbose=True, toclipboard=False):
 
 	result = []
 	prev_title = ''
+	n_total = 0
+	n_match = 0
 
 	# extract articles
+	sys.stdout.write('\n')
 	for tag in soup.select('a[class="align-middle"]'):
+		n_total += 1
 		skip = False
 		title = tag.getText()
 		if title != prev_title:
@@ -56,10 +61,15 @@ def mednlp_parse(res, verbose=True, toclipboard=False):
 							link = tag.attrs['href']
 							if link.startswith('/anthology/paper'):
 								result.append([title, 'https://aclweb.org'+link])
+								n_match += 1
 								skip = True
 								prev_title = title
 								break
+		sys.stdout.write('\r Searching... {} match / {}'.format(n_match, n_total))
+		sys.stdout.flush()	
+	sys.stdout.write('\n')
 
+	# result
 	if len(result) == 0:								
 		print('No medical NLP papers found.')								
 								
