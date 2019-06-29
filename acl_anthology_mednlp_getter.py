@@ -26,6 +26,7 @@ def mednlp(conference_and_year, verbose=True, toclipboard=False):
 	# get html content
 	url = 'https://aclweb.org/anthology/events/{}-{}'.format(conference.lower(), str(year))
 
+	print('Connecting...')
 	try:
 		with urllib.request.urlopen(url) as res:
 			mednlp_parse(res, verbose, toclipboard)
@@ -65,7 +66,7 @@ def mednlp_parse(res, verbose=True, toclipboard=False):
 								skip = True
 								prev_title = title
 								break
-		sys.stdout.write('\r Searching... {} match / {}'.format(n_match, n_total))
+		sys.stdout.write('\rSearching... {} match / {}'.format(n_match, n_total))
 		sys.stdout.flush()	
 	sys.stdout.write('\n')
 
