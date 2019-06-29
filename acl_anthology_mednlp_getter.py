@@ -31,13 +31,13 @@ def mednlp(conference_and_year, verbose=True, toclipboard=False):
 	if conference.lower() not in conferences:
 		print("Error: cannot find conference '{}'. \nAvailable conferences are {}.".format(conference, ', '.join(conferences)))
 	else:	
-	        # get html content
-    	        url = 'https://aclweb.org/anthology/events/{}-{}'.format(conference.lower(), str(year))
-	        print('Connecting...')
-	
-	        try:
-		        with urllib.request.urlopen(url) as res:
-			        mednlp_parse(res, verbose, toclipboard)
+		# get html content
+		url = 'https://aclweb.org/anthology/events/{}-{}'.format(conference.lower(), str(year))
+		print('Connecting...')
+		
+		try:
+			with urllib.request.urlopen(url) as res:
+				mednlp_parse(res, verbose, toclipboard)
 	        except urllib.error.HTTPError as err:
 		        print('An error occurred: {} {}'.format(err.code, err.reason))
 	        except urllib.error.URLError as err:
