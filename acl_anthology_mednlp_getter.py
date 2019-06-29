@@ -25,8 +25,8 @@ def mednlp(conference_and_year, verbose=True, toclipboard=False):
 	
 	# get html content
 	url = 'https://aclweb.org/anthology/events/{}-{}'.format(conference.lower(), str(year))
-
 	print('Connecting...')
+	
 	try:
 		with urllib.request.urlopen(url) as res:
 			mednlp_parse(res, verbose, toclipboard)
@@ -49,7 +49,6 @@ def mednlp_parse(res, verbose=True, toclipboard=False):
 	n_match = 0
 
 	# extract articles
-	sys.stdout.write('\n')
 	for tag in soup.select('a[class="align-middle"]'):
 		n_total += 1
 		skip = False
