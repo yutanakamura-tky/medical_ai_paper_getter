@@ -23,17 +23,25 @@ def mednlp(conference_and_year, verbose=True, toclipboard=False):
 	
 	conference, year = conference_and_year
 	
-	# get html content
-	url = 'https://aclweb.org/anthology/events/{}-{}'.format(conference.lower(), str(year))
-	print('Connecting...')
+	conferences = ['acl', 'anlp', 'cl', 'conll', 'eacl', 'emnlp', 'naacl', \
+		       'semeval', 'tacl', 'ws', 'sigs', 'alta', 'coling', 'hlt', \
+		       'ijcnlp', 'jep-taln-recital', 'lrec', 'muc', 'paclic', \
+		       'ranlp', 'rocling-ijclclp', 'tinlap', 'tipster']
 	
-	try:
-		with urllib.request.urlopen(url) as res:
-			mednlp_parse(res, verbose, toclipboard)
-	except urllib.error.HTTPError as err:
-		print('An error occurred: {} {}'.format(err.code, err.reason))
-	except urllib.error.URLError as err:
-		print('An error occurred: {}'.format(err.reason))
+	if conference.lower() not in conferences:
+		print("Error: cannot find conference '{}'. \nAvailable conferences are {}.".format(conference, ', '.join(conferences)))
+	else:	
+	        # get html content
+    	        url = 'https://aclweb.org/anthology/events/{}-{}'.format(conference.lower(), str(year))
+	        print('Connecting...')
+	
+	        try:
+		        with urllib.request.urlopen(url) as res:
+			        mednlp_parse(res, verbose, toclipboard)
+	        except urllib.error.HTTPError as err:
+		        print('An error occurred: {} {}'.format(err.code, err.reason))
+	        except urllib.error.URLError as err:
+	 	        print('An error occurred: {}'.format(err.reason))
 			
 
 def mednlp_parse(res, verbose=True, toclipboard=False):
