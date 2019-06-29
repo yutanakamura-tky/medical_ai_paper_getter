@@ -39,7 +39,7 @@ def mednlp_parse(res, verbose=True, ashtml=False):
 	soup = bs4.BeautifulSoup(html, 'html5lib')
 
 	# query
-	queries = ['medic', 'biomedic', 'health', 'clinic', 'life', 'care', 'pharm', 'drug', 'surg', 'emergency', 'ICU', 'hospital', 'patient', 'doctor', 'disease', 'illness', 'symptom', 'psychol', 'psychiat', 'mental', 'radiol', 'x-ray', 'report', 'CT', 'MRI', 'radiograph', 'tomograph', 'magnetic']
+	queries = ['medic', 'biomedic', 'health', 'clinic', 'life', 'care', 'pharm', 'drug', 'surg', 'emergency', 'ICU', 'hospital', 'patient', 'doctor', 'disease', 'illness', 'symptom', 'treatment', 'cancer', 'psycholog', 'psychiat', 'mental', 'radiol', 'x-ray', 'report', 'CT', 'MRI', 'radiograph', 'tomograph', 'magnetic']
 
 	result = []
 	prev_title = ''
@@ -61,8 +61,8 @@ def mednlp_parse(res, verbose=True, ashtml=False):
 								break
 
 	if len(result) == 0:								
-		print('No medical NLP papers found.')
-		
+		print('No medical NLP papers found.')								
+								
 	if verbose:
 		print('\n\n'.join(['\n'.join(r) for r in result]))
 
