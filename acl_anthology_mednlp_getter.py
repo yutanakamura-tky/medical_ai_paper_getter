@@ -2,6 +2,7 @@ import bs4
 import pyperclip
 import sys
 import urllib
+import urllib.request
 
 def mednlp(conference_and_year, verbose=True, toclipboard=False):
     # conference_and_year: list or tuple
