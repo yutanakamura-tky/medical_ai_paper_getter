@@ -59,6 +59,9 @@ def mednlp_parse(res, verbose=True):
 								prev_title = title
 								break
 
+	if len(result) == 0:								
+		print('No medical NLP papers found.')								
+								
 	if verbose:
 		print('\n\n'.join(['\n'.join(r) for r in result]))
 
