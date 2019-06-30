@@ -23,18 +23,27 @@ def mednlp(conference_and_year, verbose=True, toclipboard=False):
     #   print extracted articles if set True
     
     conference, year = conference_and_year
+
+    conferences = ['acl', 'anlp', 'cl', 'conll', 'eacl', 'emnlp', 'naacl',\
+                   'semeval', 'tacl', 'ws', 'sigs', 'alta', 'coling', 'hlt',\
+                   'ijcnlp', 'jep-taln-recital', 'lrec', 'muc', 'paclic', 'ranlp',\
+                   'rocling-ijclclp', 'tinlap', 'tipster']
+
+    if conference.lower() not in conferences:
+        print("Error: cannot find conference '{}'.\nAvailable conferences: {}.".format(conference, ', '.join(conferences)))
+    else:
+        # get html content
+        url = 'https://aclweb.org/anthology/events/{}-{}'.format(conference.lower(), str(year))
+        if verbose:
+            print('Connecting...')
     
-    # get html content
-    url = 'https://aclweb.org/anthology/events/{}-{}'.format(conference.lower(), str(year))
-    print('Connecting...')
-    
-    try:
-        with urllib.request.urlopen(url) as res:
-            mednlp_parse(res, verbose, toclipboard)
-    except urllib.error.HTTPError as err:
-        print('An error occurred: {} {}'.format(err.code, err.reason))
-    except urllib.error.URLError as err:
-        print('An error occurred: {}'.format(err.reason))
+        try:
+            with urllib.request.urlopen(url) as res:
+                mednlp_parse(res, verbose, toclipboard)
+        except urllib.error.HTTPError as err:
+            print('Error: {} {}'.format(err.code, err.reason))
+        except urllib.error.URLError as err:
+            print('Error: {}'.format(err.reason))
 
 
 def mednlp_parse(res, verbose=True, toclipboard=False):
@@ -69,16 +78,19 @@ def mednlp_parse(res, verbose=True, toclipboard=False):
                                 skip = True
                                 prev_title = title
                                 break
-        sys.stdout.write('\rSearching... {} match / {}'.format(n_match, n_total))
-        sys.stdout.flush()
-    sys.stdout.write('\n')
-
-    # result
-    if len(result) == 0:
-        print('No medical NLP papers found.')
-    
+        if verbose:
+            sys.stdout.write('\rSearching... {} match / {}'.format(n_match, n_total))
+            sys.stdout.flush()
     if verbose:
-        print('\n\n'.join(['\n'.join(r) for r in result]))
+        sys.stdout.write('\n')
+
+        
+    # result of search    
+    if verbose:
+        if len(result) > 0:
+            print('\n\n'.join(['\n'.join(r) for r in result]))
+        else:
+            print('No medical NLP papers found.')
 
     if toclipboard:
         pyperclip.copy('\n\n'.join(['\n'.join(r) for r in result]))
