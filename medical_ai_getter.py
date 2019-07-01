@@ -36,7 +36,7 @@ def medicalai(conference_and_year, verbose=True, toclipboard=False):
                    'semeval', 'tacl', 'ws', 'sigs', 'alta', 'coling', 'hlt',\
                    'ijcnlp', 'jep-taln-recital', 'lrec', 'muc', 'paclic', 'ranlp',\
                             'rocling-ijclclp', 'tinlap', 'tipster'],\
-                    'ML' : ['nips', 'icml', 'iclr', 'ijcnn', 'aaai', 'ijcai'],\
+                    'ML' : ['nips', 'icml', 'iclr', 'ijcnn', 'ijcai'],\
                     'CV' : ['cvpr', 'iccv']}
 
     if conference.lower() in conferences['NLP']:
