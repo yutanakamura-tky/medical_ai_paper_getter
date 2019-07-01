@@ -81,6 +81,7 @@ def mednlp_parse(res, verbose=True, toclipboard=False):
     prev_title = ''
     n_total = 0
     n_match = 0
+    spacer = '=' * 30
                
     # extract articles
     for tag in soup.select('a[class="align-middle"]'):
@@ -107,8 +108,11 @@ def mednlp_parse(res, verbose=True, toclipboard=False):
     if verbose:
         sys.stdout.write('\n')
         if n_match > 0:
+            print(spacer)
             print('\n\n'.join(['\n'.join(r) for r in result]))
-            print('Medical NLP papers: {} {} / {}'.format(n_match, 'matches' if n_match>1 else 'match', n_total))
+            print(spacer)
+            print('Medical-like NLP papers: {} / {}'.format(n_match, n_total))
+            print(spacer)
         else:
             print('No medical NLP papers found.')
 
@@ -133,6 +137,7 @@ def medml_parse(res, verbose=True, toclipboard=False):
     prev_title = ''
     n_total = 0
     n_match = 0
+    spacer = '=' * 30
 
     #regexp_title = re.compile(r'<span class="title" itemprop="name">(.+?)</span>')
     #regexp_link = re.compile(r'<li class="drop-down">(.+?)<a href="(.+?)">(.+?)</li>')
@@ -147,9 +152,22 @@ def medml_parse(res, verbose=True, toclipboard=False):
                 if not skip:
                     for q in (query, query.upper(), query.capitalize()):
                         if (((' ' + q) in title) or title.startswith(q)) and (not skip):
-                            # link = regexp_link.search(tagtext)
-                            # result.append([title, link])
-                            result.append([title])
+                            # tag.parent
+                            #   -> <div class="data"> ~ </div>
+                            # tag.parent.parent
+                            #   -> <li class="entry inproceedings"> ~ </li>
+                            # tag.parent.parent.contents[2]
+                            #   -> <nav class="publ"> ~ </nav>
+                            # tag.parent.parent.contents[2].ul
+                            #   -> <ul> ~ </ul>
+                            # tag.parent.parent.contents[2].ul.li
+                            #   -> <li class="dropdown"> ~ </li>
+                            # tag.parent.parent.contents[2].ul.li.div
+                            #   -> <div class="head"> ~ </div>
+                            # tag.parent.parent.contents[2].ul.li.div.a
+                            #   -> <a href="..."> ~ </a>
+                            link = tag.parent.parent.contents[2].ul.li.div.a['href']
+                            result.append([title, link])
                             n_match += 1
                             skip = True
                             prev_title = title
@@ -162,8 +180,11 @@ def medml_parse(res, verbose=True, toclipboard=False):
     if verbose:
         sys.stdout.write('\n')
         if n_match > 0:
+            print(spacer)
             print('\n\n'.join(['\n'.join(r) for r in result]))
-            print('Medical AI papers: {} {} / {}'.format(n_match, 'matches' if n_match!=1 else 'match', n_total))
+            print(spacer)
+            print('Medical-like AI papers: {} / {}'.format(n_match, n_total))
+            print(spacer)
         else:
             print('No medical AI papers found.')
 
