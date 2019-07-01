@@ -102,14 +102,13 @@ def mednlp_parse(res, verbose=True, toclipboard=False):
         if verbose:
             sys.stdout.write('\rSearching... {} match / {}'.format(n_match, n_total))
             sys.stdout.flush()
-    if verbose:
-        sys.stdout.write('\n')
-
         
     # result of search    
     if verbose:
-        if len(result) > 0:
+        sys.stdout.write('\n')
+        if n_match > 0:
             print('\n\n'.join(['\n'.join(r) for r in result]))
+            print('Medical NLP papers: {} {} / {}'.format(n_match, 'matches' if n_match>1 else 'match', n_total))
         else:
             print('No medical NLP papers found.')
 
@@ -135,44 +134,38 @@ def medml_parse(res, verbose=True, toclipboard=False):
     n_total = 0
     n_match = 0
 
-    regexp_title = re.compile(r'<span class="title" itemprop="name">(.+?)</span>')
-    regexp_link = re.compile(r'<li class="drop-down">(.+?)<a href="(.+?)">(.+?)</li>')
+    #regexp_title = re.compile(r'<span class="title" itemprop="name">(.+?)</span>')
+    #regexp_link = re.compile(r'<li class="drop-down">(.+?)<a href="(.+?)">(.+?)</li>')
                
     # extract articles
-    for tag in soup.select('li[class="entry inproceedings"]'):
+    for tag in soup.select('span[class="title"]'):
         n_total += 1
         skip = False
-        tagtext = tag.getText()
-        print(tagtext)
-        mo = regexp_title.search(tagtext)
-        if mo is None:
-            continue
-        else:
-            title = regexp_title.search(tagtext).group(1)
-            if title != prev_title:
-                for query in queries:
-                    if not skip:
-                        for q in (query, query.upper(), query.capitalize()):
-                            if (((' ' + q) in title) or title.startswith(q)) and (not skip):
-                                link = regexp_link.search(tagtext)
-                                result.append([title, link])
-                                n_match += 1
-                                skip = True
-                                prev_title = title
-                                break
+        title = tag.getText()
+        if title != prev_title:
+            for query in queries:
+                if not skip:
+                    for q in (query, query.upper(), query.capitalize()):
+                        if (((' ' + q) in title) or title.startswith(q)) and (not skip):
+                            # link = regexp_link.search(tagtext)
+                            # result.append([title, link])
+                            result.append([title])
+                            n_match += 1
+                            skip = True
+                            prev_title = title
+                            break
         if verbose:
-            sys.stdout.write('\rSearching... {} match / {}'.format(n_match, n_total))
+            sys.stdout.write('\rSearching... {} {} / {}'.format(n_match, 'matches' if n_match!=1 else 'match', n_total))
             sys.stdout.flush()
-    if verbose:
-        sys.stdout.write('\n')
-
         
     # result of search    
     if verbose:
-        if len(result) > 0:
+        sys.stdout.write('\n')
+        if n_match > 0:
             print('\n\n'.join(['\n'.join(r) for r in result]))
+            print('Medical AI papers: {} {} / {}'.format(n_match, 'matches' if n_match!=1 else 'match', n_total))
         else:
-            print('No medical ML papers found.')
+            print('No medical AI papers found.')
 
     if toclipboard:
         pyperclip.copy('\n\n'.join(['\n'.join(r) for r in result]))
