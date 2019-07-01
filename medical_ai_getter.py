@@ -19,7 +19,10 @@ def medicalai(conference_and_year, verbose=True, toclipboard=False):
     #      'rocling-ijclclp', 'tinlap', 'tipster')
     #
     #     for machine learning conferences:
-    #     ('nips', 'icml', 'iclr', 'ijcnn', 'aaai', 'ijcai')
+    #     ('nips', 'icml', 'iclr', 'ijcnn', 'ijcai')
+    #
+    #     for computer vision conferences:
+    #     ('cvpr', 'iccv')
     #
     #    year: str or int
     #      (1965 or greater)
