@@ -19,7 +19,10 @@ def medicalai(conference_and_year, verbose=True, toclipboard=False):
     #      'rocling-ijclclp', 'tinlap', 'tipster')
     #
     #     for machine learning conferences:
-    #     ('nips', 'icml', 'iclr', 'ijcnn', 'aaai', 'ijcai')
+    #     ('nips', 'icml', 'iclr', 'ijcnn', 'ijcai')
+    #
+    #     for computer vision conferences:
+    #     ('cvpr', 'iccv')
     #
     #    year: str or int
     #      (1965 or greater)
@@ -36,7 +39,8 @@ def medicalai(conference_and_year, verbose=True, toclipboard=False):
                    'semeval', 'tacl', 'ws', 'sigs', 'alta', 'coling', 'hlt',\
                    'ijcnlp', 'jep-taln-recital', 'lrec', 'muc', 'paclic', 'ranlp',\
                             'rocling-ijclclp', 'tinlap', 'tipster'],\
-                    'ML' : ['nips', 'icml', 'iclr', 'ijcnn', 'aaai', 'ijcai']}
+                    'ML' : ['nips', 'icml', 'iclr', 'ijcnn', 'ijcai'],\
+                    'CV' : ['cvpr', 'iccv']}
 
     if conference.lower() in conferences['NLP']:
         url = 'https://aclweb.org/anthology/events/{}-{}'.format(conference.lower(), str(year))
@@ -51,7 +55,7 @@ def medicalai(conference_and_year, verbose=True, toclipboard=False):
         except urllib.error.URLError as err:
             print('Error: {}'.format(err.reason))
         
-    elif conference.lower() in conferences['ML']:
+    elif conference.lower() in conferences['ML']+conferences['CV']:
         url = 'https://dblp.org/db/conf/{0}/{0}{1}.html'.format(conference.lower(), str(year))
         print(url)
         if verbose:
