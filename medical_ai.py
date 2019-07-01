@@ -36,43 +36,50 @@ def medicalai(conference_and_year, verbose=True, toclipboard=False):
     conference, year = conference_and_year
 
     conferences = { 'NLP' : ['acl', 'anlp', 'cl', 'conll', 'eacl', 'emnlp', 'naacl',\
-                   'semeval', 'tacl', 'ws', 'sigs', 'alta', 'coling', 'hlt',\
-                   'ijcnlp', 'jep-taln-recital', 'lrec', 'muc', 'paclic', 'ranlp',\
+                             'semeval', 'tacl', 'ws', 'sigs', 'alta', 'coling', 'hlt',\
+                             'ijcnlp', 'jep-taln-recital', 'lrec', 'muc', 'paclic', 'ranlp',\
                             'rocling-ijclclp', 'tinlap', 'tipster'],\
                     'ML' : ['nips', 'icml', 'iclr', 'ijcnn', 'ijcai'],\
                     'CV' : ['cvpr', 'iccv']}
 
-    if conference.lower() in conferences['NLP']:
-        url = 'https://aclweb.org/anthology/events/{}-{}'.format(conference.lower(), str(year))
+    sources = {}
+
+    for conf in conferences['NLP']:
+        sources[conf] = 'aclweb'
+    for conf in conferences['ML']:
+        sources[conf] = 'dblp'
+    for conf in conferences['CV']:
+        sources[conf] = 'dblp'
+    
+    urls = { 'aclweb' : 'https://aclweb.org/anthology/events/{}-{}'.format(conference.lower(), str(year)),\
+             'dblp' : 'https://dblp.org/db/conf/{0}/{0}{1}.html'.format(conference.lower(), str(year))}
+
+    
+    # check conference name
+    try:
+        source = sources[conference.lower()]
+
+        # make a connection
         if verbose:
             print('Connecting...')
-        try:
-            with urllib.request.urlopen(url) as res:
-                medicalai_parse(res, verbose, toclipboard, source='acl_anthology')
-                # mednlp_parse(res, verbose, toclipboard)
-        except urllib.error.HTTPError as err:
-            print('Error: {} {}'.format(err.code, err.reason))
-        except urllib.error.URLError as err:
-            print('Error: {}'.format(err.reason))
-        
-    elif conference.lower() in conferences['ML']+conferences['CV']:
-        url = 'https://dblp.org/db/conf/{0}/{0}{1}.html'.format(conference.lower(), str(year))
-        print(url)
-        if verbose:
-            print('Connecting...')
-        try:
-            with urllib.request.urlopen(url) as res:
-                medicalai_parse(res, verbose, toclipboard, source='dblp')
-                # medml_parse(res, verbose, toclipboard)
-        except urllib.error.HTTPError as err:
-            print('Error: {} {}'.format(err.code, err.reason))
-        except urllib.error.URLError as err:
-            print('Error: {}'.format(err.reason))
-        
-    else:
-        print("Error: cannot find conference '{}'.\nAvailable conferences: {}.".format(conference, ', '.join(conferences['NLP']+conferences['ML'])))
+            try:
+                with urllib.request.urlopen(urls[source]) as res:
+                    medicalai_parse(res, verbose, toclipboard, source)
+            except urllib.error.HTTPError as err:
+                print('Error: {} {}'.format(err.code, err.reason))
+            except urllib.error.URLError as err:
+                print('Error: {}'.format(err.reason))
 
-
+    except KeyError:
+        seps = '=' * 35
+        print("Error: unavailable conference '{}'.".format(conference))
+        print(seps)
+        print('Available conferences:')
+        print('\tML, AI:\n\t\t{}'.format(', '.join(conferences['ML'])))
+        print('\tCV:\n\t\t{}'.format(', '.join(conferences['CV'])))
+        print('\tNLP:\n\t\t{}'.format(', '.join(conferences['NLP'])))
+        print(seps)
+        
 
 def medicalai_parse(res, verbose, toclipboard, source):
     # get html content
@@ -89,10 +96,10 @@ def medicalai_parse(res, verbose, toclipboard, source):
     prev_title = ''
     n_total = 0
     n_match = 0
-    spacer = '=' * 35
+    seps = '=' * 35
 
     # extract articles
-    if source == 'acl_anthology':
+    if source == 'aclweb':
         for tag in soup.select('a[class="align-middle"]'):
             n_total += 1
             skip = False
@@ -145,11 +152,11 @@ def medicalai_parse(res, verbose, toclipboard, source):
     if verbose:
         sys.stdout.write('\n')
         if n_match > 0:
-            print(spacer)
+            print(seps)
             print('\n\n'.join(['\n'.join(r) for r in result]))
-            print(spacer)
+            print(seps)
             print('Medical-like AI papers: {} / {}'.format(n_match, n_total))
-            print(spacer)
+            print(seps)
         else:
             print('No medical-like AI papers found.')
 
