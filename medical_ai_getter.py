@@ -1,5 +1,6 @@
 import bs4
 import pyperclip
+import re
 import sys
 import urllib
 import urllib.request
@@ -48,12 +49,13 @@ def medicalai(conference_and_year, verbose=True, toclipboard=False):
             print('Error: {}'.format(err.reason))
         
     elif conference.lower() in conferences['ML']:
-        url = 'https://aclweb.org/anthology/events/{}-{}'.format(conference.lower(), str(year))
+        url = 'https://dblp.org/db/conf/{0}/{0}{1}.html'.format(conference.lower(), str(year))
+        print(url)
         if verbose:
             print('Connecting...')
         try:
             with urllib.request.urlopen(url) as res:
-                mednlp_parse(res, verbose, toclipboard)
+                medml_parse(res, verbose, toclipboard)
         except urllib.error.HTTPError as err:
             print('Error: {} {}'.format(err.code, err.reason))
         except urllib.error.URLError as err:
@@ -61,6 +63,7 @@ def medicalai(conference_and_year, verbose=True, toclipboard=False):
         
     else:
         print("Error: cannot find conference '{}'.\nAvailable conferences: {}.".format(conference, ', '.join(conferences['NLP']+conferences['ML'])))
+
 
 
 def mednlp_parse(res, verbose=True, toclipboard=False):
@@ -131,20 +134,28 @@ def medml_parse(res, verbose=True, toclipboard=False):
     prev_title = ''
     n_total = 0
     n_match = 0
+
+    regexp_title = re.compile(r'<span class="title" itemprop="name">(.+?)</span>')
+    regexp_link = re.compile(r'<li class="drop-down">(.+?)<a href="(.+?)">(.+?)</li>')
                
     # extract articles
-    for tag in soup.select('a[class="align-middle"]'):
+    for tag in soup.select('li[class="entry inproceedings"]'):
         n_total += 1
         skip = False
-        title = tag.getText()
-        if title != prev_title:
-            for query in queries:
-                if not skip:
-                    for q in (query, query.upper(), query.capitalize()):
-                        if (((' ' + q) in title) or title.startswith(q)) and (not skip):
-                            link = tag.attrs['href']
-                            if link.startswith('/anthology/paper'):
-                                result.append([title, 'https://aclweb.org' + link])
+        tagtext = tag.getText()
+        print(tagtext)
+        mo = regexp_title.search(tagtext)
+        if mo is None:
+            continue
+        else:
+            title = regexp_title.search(tagtext).group(1)
+            if title != prev_title:
+                for query in queries:
+                    if not skip:
+                        for q in (query, query.upper(), query.capitalize()):
+                            if (((' ' + q) in title) or title.startswith(q)) and (not skip):
+                                link = regexp_link.search(tagtext)
+                                result.append([title, link])
                                 n_match += 1
                                 skip = True
                                 prev_title = title
@@ -161,7 +172,7 @@ def medml_parse(res, verbose=True, toclipboard=False):
         if len(result) > 0:
             print('\n\n'.join(['\n'.join(r) for r in result]))
         else:
-            print('No medical NLP papers found.')
+            print('No medical ML papers found.')
 
     if toclipboard:
         pyperclip.copy('\n\n'.join(['\n'.join(r) for r in result]))
