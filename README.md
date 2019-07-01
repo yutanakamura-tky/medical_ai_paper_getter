@@ -25,8 +25,11 @@ Clipboard options:
 Copy result on clipboard? (True/False) :
 ```
 
-e.g. For 'nips 2018' you get 11 medical-like conference papers:
+e.g. For `'nips 2018'`, you get 11 medical-like conference papers:
 ```
+python3 medical_ai.py 
+Input conference name and year (e.g. 'naacl 2019') : nips 2018
+Copy result on clipboard? (True/False) : False
 Connecting...
 Searching... 11 matches / 1011
 ===================================
