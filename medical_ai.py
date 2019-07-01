@@ -13,7 +13,7 @@ def medicalai(conference_and_year, verbose=True, toclipboard=False):
     #     for natural language processing conferences:
     #     ('acl', 'anlp', 'cl', 'conll', 'eacl',
     #      'emnlp', 'naacl', 'semeval', 'tacl',
-    #      'ws', 'sigs', 'alta', 'coling', 'hlt',
+    #      'ws', 'alta', 'coling', 'hlt',
     #      'ijcnlp', 'jep-taln-recital', 'lrec',
     #      'muc', 'paclic', 'ranlp',
     #      'rocling-ijclclp', 'tinlap', 'tipster')
@@ -36,7 +36,7 @@ def medicalai(conference_and_year, verbose=True, toclipboard=False):
     conference, year = conference_and_year
 
     conferences = { 'NLP' : ['acl', 'anlp', 'cl', 'conll', 'eacl', 'emnlp', 'naacl',\
-                             'semeval', 'tacl', 'ws', 'sigs', 'alta', 'coling', 'hlt',\
+                             'semeval', 'tacl', 'ws', 'alta', 'coling', 'hlt',\
                              'ijcnlp', 'jep-taln-recital', 'lrec', 'muc', 'paclic', 'ranlp',\
                             'rocling-ijclclp', 'tinlap', 'tipster'],\
                     'ML' : ['nips', 'icml', 'iclr', 'ijcnn', 'ijcai'],\
@@ -62,13 +62,13 @@ def medicalai(conference_and_year, verbose=True, toclipboard=False):
         # make a connection
         if verbose:
             print('Connecting...')
-            try:
-                with urllib.request.urlopen(urls[source]) as res:
-                    medicalai_parse(res, verbose, toclipboard, source)
-            except urllib.error.HTTPError as err:
-                print('Error: {} {}'.format(err.code, err.reason))
-            except urllib.error.URLError as err:
-                print('Error: {}'.format(err.reason))
+        try:
+            with urllib.request.urlopen(urls[source]) as res:
+                medicalai_parse(res, verbose, toclipboard, source)
+        except urllib.error.HTTPError as err:
+            print('Error: {} {}'.format(err.code, err.reason))
+        except urllib.error.URLError as err:
+            print('Error: {}'.format(err.reason))
 
     except KeyError:
         seps = '=' * 35
@@ -98,17 +98,20 @@ def medicalai_parse(res, verbose, toclipboard, source):
     n_match = 0
     seps = '=' * 35
 
+    selector = {'aclweb' : 'a[class="align-middle"]',\
+                'dblp' : 'span[class="title"]'}
+    
     # extract articles
-    if source == 'aclweb':
-        for tag in soup.select('a[class="align-middle"]'):
-            n_total += 1
-            skip = False
-            title = tag.getText()
-            if title != prev_title:
-                for query in queries:
-                    if not skip:
-                        for q in (query, query.upper(), query.capitalize()):
-                            if (((' ' + q) in title) or title.startswith(q)) and (not skip):
+    for tag in soup.select(selector[source]):
+        n_total += 1
+        skip = False
+        title = tag.getText()
+        if title != prev_title:
+            for query in queries:
+                if not skip:
+                    for q in (query, query.upper(), query.capitalize()):
+                        if (((' ' + q) in title) or title.startswith(q)) and (not skip):
+                            if source == 'aclweb':
                                 link = tag.attrs['href']
                                 if link.startswith('/anthology/paper'):
                                     result.append([title, 'https://aclweb.org' + link])
@@ -116,37 +119,16 @@ def medicalai_parse(res, verbose, toclipboard, source):
                                     skip = True
                                     prev_title = title
                                     break
-            if verbose:
-                sys.stdout.write('\rSearching... {} match / {}'.format(n_match, n_total))
-                sys.stdout.flush()
-
-    elif source == 'dblp':
-        for tag in soup.select('span[class="title"]'):
-            n_total += 1
-            skip = False
-            title = tag.getText()
-            if title != prev_title:
-                for query in queries:
-                    if not skip:
-                        for q in (query, query.upper(), query.capitalize()):
-                            if (((' ' + q) in title) or title.startswith(q)) and (not skip):
-                                # tag.parent
-                                #   -> <div class="data"> ~ </div>
-                                # tag.parent.parent
-                                #   -> <li class="entry inproceedings"> ~ </li>
-                                # tag.parent.parent.contents[2]
-                                #   -> <nav class="publ"> ~ </nav>
-                                # tag.parent.parent.contents[2].ul.li.div.a
-                                #   -> <a href="..."> ~ </a>
+                            elif source == 'dblp':
                                 link = tag.parent.parent.contents[2].ul.li.div.a['href']
                                 result.append([title, link])
                                 n_match += 1
                                 skip = True
                                 prev_title = title
                                 break
-            if verbose:
-                sys.stdout.write('\rSearching... {} {} / {}'.format(n_match, 'matches' if n_match!=1 else 'match', n_total))
-                sys.stdout.flush()
+        if verbose:
+            sys.stdout.write('\rSearching... {} match / {}'.format(n_match, n_total))
+            sys.stdout.flush()
         
     # result of search    
     if verbose:
