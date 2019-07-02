@@ -10,7 +10,7 @@ CVPR, ICCV
 ACL, NAACL, EMNLP, CoNLL, COLING, IJCNLP, EACL, LREC, CL, SEMEVAL, TACL, ALTA, HLT, JEP-TALN-RECITAL, MUC, PACLIC, RANLP, ROCLING-IJCLCLP, TINLAP, TIPSTER
 
 # Usage
-Run `medical_ay.py` on the shell:
+Run `medical_ai.py` on the shell:
 ```
 python3 medical_ai.py
 ```
