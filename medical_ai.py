@@ -89,7 +89,7 @@ def medicalai_parse(res, verbose, toclipboard, source):
     # query
     queries = ['medic', 'biomedic', 'bioMedic', 'health', 'clinic', 'life', 'care', 'pharm', 'drug', 'surg',
                'emergency', 'ICU', 'hospital', 'patient', 'doctor', 'disease', 'illness', 'symptom', 'treatment',
-               'cancer', 'psycholog', 'psychiat', 'mental', 'radiol', 'x-ray', 'CT', 'MRI', 'radiograph', 'tomograph',
+               'cancer', 'psycholog', 'psychiat', 'mental', 'radiol', 'patho', 'x-ray', 'x-Ray', 'mammogr', 'CT', 'MRI', 'radiograph', 'tomograph',
                'magnetic']
 
     result = []
