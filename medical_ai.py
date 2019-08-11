@@ -53,7 +53,9 @@ nlp = Modality()
 cv = Modality()
 acl = Conference()
 '''
-        
+
+# consts
+
 conferences = { 'NLP' : ['acl', 'anlp', 'cl', 'conll', 'eacl', 'emnlp', 'naacl',\
                          'semeval', 'tacl', 'ws', 'alta', 'coling', 'hlt',\
                          'ijcnlp', 'jep-taln-recital', 'lrec', 'muc', 'paclic', 'ranlp',\
@@ -70,13 +72,16 @@ for conf in conferences['ML']:
 for conf in conferences['CV']:
     sources[conf] = 'dblp'
 
+url_container = { 'aclweb' : 'https://aclweb.org/anthology/events/{0}-{1}',\
+                  'dblp' : 'https://dblp.org/db/conf/{0}/{0}{1}.html'}
 
-queries = ['medic', 'biomedic', 'bioMedic', 'health', 'clinic', 'life', 'care', 'pharm', 'drug', 'surg',\
+selector = {'aclweb' : 'a[class="align-middle"]',\
+            'dblp' : 'span[class="title"]'}
+
+keywords = ['medic', 'biomedic', 'bioMedic', 'health', 'clinic', 'life', 'care', 'pharm', 'drug', 'surg',\
            'emergency', 'ICU', 'hospital', 'patient', 'doctor', 'disease', 'illness', 'symptom', 'treatment',\
            'cancer', 'psycholog', 'psychiat', 'mental', 'radiol', 'patho', 'x-ray', 'x-Ray', 'mammogr', 'CT', 'MRI', 'radiograph', 'tomograph',\
            'magnetic']
-
-
 
 description='''
 ++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -94,6 +99,9 @@ To output HTML link tags or markdown links, use options below.
 ++++++++++++++++++++++++++++++++++++++++++++++++++
 '''
 
+
+# get args when executed via command lines
+
 def get_args():
     parser = argparse.ArgumentParser(description=description, formatter_class=argparse.RawTextHelpFormatter)
     group = parser.add_mutually_exclusive_group()
@@ -105,11 +113,19 @@ def get_args():
     group.add_argument('--html', help='output as HTML <a> tags\ncollaborates with --url-only, ignores --title-only\n', action='store_true', dest='html')
     #parser.add_argument('-c', '--conference', help='specify one or more conferences (e.g. acl)', metavar='<conferences>', type=str)
     #parser.add_argument('-y', '--year', help='specify one or more years (e.g. 2019)', metavar='<years>', type=int)
-    #parser.add_argument('-q', '--quiet', action='store_true')
     args = parser.parse_args()
     return args
 
-def medicalai(args):
+class Query():
+    def __init__(self):
+        self.conference = None
+        self.year = None
+        self.res = None
+        self.args = None
+
+# 
+        
+def medicalai(conference, year, *config):
     # conference_and_year: list or tuple
     #   (conference, year) where:
     #
@@ -131,32 +147,26 @@ def medicalai(args):
     #
     #    year: str or int
     #      (1965 or greater)
-    #
-    # verbose: bool
-    #   print extracted articles if set True
-    #
-    # toclipboard: bool
-    #   copy paper names and URLs on clipboard if set True
     
-    conference = args.conference.lower()
-    year = str(args.year)
-  
     global conferences
     global sources
-    
-    urls = { 'aclweb' : 'https://aclweb.org/anthology/events/{}-{}'.format(conference, year),\
-             'dblp' : 'https://dblp.org/db/conf/{0}/{0}{1}.html'.format(conference, year)}
+    global url_container
 
+    query = Query()
+    query.conference = conference.lower()
+    query.year = str(year)
+    query.args = args
     
     # check conference name
     try:
-        source = sources[conference]
+        query.source = sources[conference]
+        query.url = url_container[query.source].format(query.conference, query.year)
 
         # make a connection
         print('Connecting...')
         try:
-            with urllib.request.urlopen(urls[source]) as res:
-                medicalai_parse(res, source, args)
+            with urllib.request.urlopen(query.url) as res:
+                medicalai_parse(res, query)
         except urllib.error.HTTPError as err:
             print('Error: {} {}'.format(err.code, err.reason))
         except urllib.error.URLError as err:
@@ -164,7 +174,7 @@ def medicalai(args):
 
     except KeyError:
         seps = '=' * 35
-        print("Error: unavailable conference '{}'.".format(conference))
+        print("Error: unavailable conference '{}'.".format(query.conference))
         print(seps)
         print('Available conferences:')
         print('\tML, AI:\n\t\t{}'.format(', '.join(conferences['ML'])))
@@ -173,55 +183,51 @@ def medicalai(args):
         print(seps)
         
 
-def medicalai_parse(res, source, args):
+def medicalai_parse(res, query):
+    global selector
+    global keywords
+    prev_title = ''
+    n_total = 0
+    seps = '=' * 35
+    result = collections.OrderedDict()
+    
     # get html content
     html = res.read()
     soup = bs4.BeautifulSoup(html, 'html5lib')
     
-    # query
-    global queries
-
-    result = collections.OrderedDict()
-    prev_title = ''
-    n_total = 0
-    seps = '=' * 35
-
-    selector = {'aclweb' : 'a[class="align-middle"]',\
-                'dblp' : 'span[class="title"]'}
-    
     # extract articles
-    for tag in soup.select(selector[source]):
+    for tag in soup.select(selector[query.source]):
         n_total += 1
         skip = False
         title = tag.getText()
         if title != prev_title:
-            for query in queries:
+            for keyword in keywords:
                 if not skip:
-                    for q in (query, query.upper(), query.capitalize()):
-                        if (((' ' + q) in title) or title.startswith(q)) and (not skip):
-                            if source == 'aclweb':
+                    for kw in (keyword, keyword.upper(), keyword.capitalize()):
+                        if (((' ' + kw) in title) or title.startswith(kw)) and (not skip):
+                            if query.source == 'aclweb':
                                 link = tag.attrs['href']
                                 if link.startswith('/anthology/paper'):
                                     result[title] = 'https://aclweb.org' + link
                                     skip = True
                                     prev_title = title
                                     break
-                            elif source == 'dblp':
+                            elif query.source == 'dblp':
                                 link = tag.parent.parent.contents[2].ul.li.div.a['href']
                                 result[title] = link
                                 skip = True
                                 prev_title = title
                                 break
-        if not args.quiet:
+        if not query.args.quiet:
             sys.stdout.write('\rSearching... {} match / {}'.format(len(result), n_total))
             sys.stdout.flush()
 
     # prepare output display
     output = ''
     if result:
-        if args.markdown:
+        if query.args.markdown:
             output = '\n'.join([ '[{}]({})\n'.format(title, url) for title, url in result.items() ])
-        elif args.html:
+        elif query.args.html:
             output = '<br/>\n'.join([ '<a href="{1}" target="_blank" alt="{0}">{0}</a>'.format(title.replace('"', "'"), url) for title, url in result.items() ])
         else:
             output = '\n\n'.join([ '{}\n{}'.format(title, url) for title, url in result.items() ])
@@ -230,7 +236,7 @@ def medicalai_parse(res, source, args):
             
 
     # display output
-    if args.quiet:
+    if query.args.quiet:
         if result:
             print('Medical-like AI papers in {} {}: {} / {}'.format(args.conference.upper(), args.year, len(result), n_total))
         else:
@@ -248,7 +254,7 @@ def medicalai_parse(res, source, args):
 
             
     # copy onto clipboard if needed
-    if args.copy:
+    if query.args.copy:
         pyperclip.copy(output)
         print('Copied this result to clipboard.')
 
@@ -258,5 +264,4 @@ def medicalai_parse(res, source, args):
 
 if __name__ == '__main__':
     args = get_args()
-    medicalai(args)
-    #medicalai([args.conference, args.year], toclipboard=input('Copy result on clipboard? (y/n) : '))
+    medicalai(args.conference, args.year, args)
