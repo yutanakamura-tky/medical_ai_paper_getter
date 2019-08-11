@@ -7,36 +7,10 @@ import urllib
 import urllib.request
 
 
-# consts
+# get args when executed via command-line
 
-conferences = { 'NLP' : ['acl', 'anlp', 'cl', 'conll', 'eacl', 'emnlp', 'naacl',\
-                         'semeval', 'tacl', 'ws', 'alta', 'coling', 'hlt',\
-                         'ijcnlp', 'jep-taln-recital', 'lrec', 'muc', 'paclic', 'ranlp',\
-                         'rocling-ijclclp', 'tinlap', 'tipster'],\
-                'ML' : ['nips', 'icml', 'iclr', 'ijcnn', 'ijcai'],\
-                'CV' : ['cvpr', 'iccv']}
-
-sources = {}
-
-for conf in conferences['NLP']:
-    sources[conf] = 'aclweb'
-for conf in conferences['ML']:
-    sources[conf] = 'dblp'
-for conf in conferences['CV']:
-    sources[conf] = 'dblp'
-
-url_container = { 'aclweb' : 'https://aclweb.org/anthology/events/{0}-{1}',\
-                  'dblp' : 'https://dblp.org/db/conf/{0}/{0}{1}.html'}
-
-selector = {'aclweb' : 'a[class="align-middle"]',\
-            'dblp' : 'span[class="title"]'}
-
-keywords = ['medic', 'biomedic', 'bioMedic', 'health', 'clinic', 'life', 'care', 'pharm', 'drug', 'surg',\
-           'emergency', 'ICU', 'hospital', 'patient', 'doctor', 'disease', 'illness', 'symptom', 'treatment',\
-           'cancer', 'psycholog', 'psychiat', 'mental', 'radiol', 'patho', 'x-ray', 'x-Ray', 'mammogr', 'CT', 'MRI', 'radiograph', 'tomograph',\
-           'magnetic']
-
-description='''
+def get_args():
+    description='''
 ++++++++++++++++++++++++++++++++++++++++++++++++++
 Pickup medical AI paper titles and URLs from specified conference and year.
 会議名と年数を指定すると, 医療に関連するAI論文のみを探し出してタイトルとURLを列挙します.
@@ -50,13 +24,7 @@ Conference name is case insensitive.
 To output HTML link tags or markdown links, use options below.
 以下に示すオプションを使うと, 結果をHTMLリンクタグやMarkdownリンクとして出力することも可能です.
 ++++++++++++++++++++++++++++++++++++++++++++++++++
-'''
-
-
-
-# get args when executed via command-line
-
-def get_args():
+    '''
     parser = argparse.ArgumentParser(description=description, formatter_class=argparse.RawTextHelpFormatter)
     group_output = parser.add_mutually_exclusive_group()
     group_less = parser.add_mutually_exclusive_group()
@@ -99,10 +67,25 @@ def medicalai(conference, year, *config):
     #
     # <output>
     #   collections.OrderedDict {<PAPER_TITLE>:<PAPER_URL>}
-    
-    global conferences
-    global sources
-    global url_container
+
+    conferences = { 'NLP' : ['acl', 'anlp', 'cl', 'conll', 'eacl', 'emnlp', 'naacl',\
+                         'semeval', 'tacl', 'ws', 'alta', 'coling', 'hlt',\
+                         'ijcnlp', 'jep-taln-recital', 'lrec', 'muc', 'paclic', 'ranlp',\
+                         'rocling-ijclclp', 'tinlap', 'tipster'],\
+                'ML' : ['nips', 'icml', 'iclr', 'ijcnn', 'ijcai'],\
+                'CV' : ['cvpr', 'iccv']}
+
+    sources = {}
+
+    for conf in conferences['NLP']:
+        sources[conf] = 'aclweb'
+        for conf in conferences['ML']:
+            sources[conf] = 'dblp'
+            for conf in conferences['CV']:
+                sources[conf] = 'dblp'
+
+    url_container = { 'aclweb' : 'https://aclweb.org/anthology/events/{0}-{1}',\
+                      'dblp' : 'https://dblp.org/db/conf/{0}/{0}{1}.html'}
 
     class Query():
         def __init__(self):
@@ -147,8 +130,14 @@ def medicalai(conference, year, *config):
 # process received HTTP response
         
 def medicalai_parse(res, query):
-    global selector
-    global keywords
+    selector = {'aclweb' : 'a[class="align-middle"]',\
+                'dblp' : 'span[class="title"]'}
+
+    keywords = ['medic', 'biomedic', 'bioMedic', 'health', 'clinic', 'life', 'care', 'pharm', 'drug', 'surg',\
+                'emergency', 'ICU', 'hospital', 'patient', 'doctor', 'disease', 'illness', 'symptom', 'treatment',\
+                'cancer', 'psycholog', 'psychiat', 'mental', 'radiol', 'patho', 'x-ray', 'x-Ray', 'mammogr', 'CT', 'MRI', 'radiograph', 'tomograph',\
+                'magnetic']
+
     prev_title = ''
     n_total = 0
     seps = '=' * 35
