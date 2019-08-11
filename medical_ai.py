@@ -79,10 +79,10 @@ def medicalai(conference, year, *config):
 
     for conf in conferences['NLP']:
         sources[conf] = 'aclweb'
-        for conf in conferences['ML']:
-            sources[conf] = 'dblp'
-            for conf in conferences['CV']:
-                sources[conf] = 'dblp'
+    for conf in conferences['ML']:
+        sources[conf] = 'dblp'
+    for conf in conferences['CV']:
+        sources[conf] = 'dblp'
 
     url_container = { 'aclweb' : 'https://aclweb.org/anthology/events/{0}-{1}',\
                       'dblp' : 'https://dblp.org/db/conf/{0}/{0}{1}.html'}
