@@ -14,10 +14,40 @@ class Modality():
 class Conference():
     def __init__(self):
         self.source = None
+    def url(self, conference, year):
+        return self.source.url(self, conference, year)
 
 class Source():
     def __init__(self):
-        self.source = None
+        self.selector = ''
+        self.url_container = ''
+    def url(self, conference, year):
+        return self.url_container.format(conference, year)
+
+aclweb = Source()
+aclweb.selector = 'a[class="align-middle"]'
+aclweb.url_container = 'https://aclweb.org/anthology/events/{}-{}'
+
+dblp = Source()
+dblp.selector = 'span[class="title"]'
+dblp.url_container = 'https://dblp.org/db/conf/{0}/{0}{1}.html'
+
+acl = Conference()
+anlp = Conference()
+cl = Conference()
+conll = Conference()
+eacl = Conference()
+emnlp = Conference()
+naacl = Conference()
+semeval = Conference()
+tacl = Conference()
+ws = Conference()
+alta = Conference()
+hlt = Conference()
+ijcnlp = Conference()
+jep-taln-recital = Conference()
+
+
 
 nlp = Modality()
 cv = Modality()
@@ -50,8 +80,8 @@ queries = ['medic', 'biomedic', 'bioMedic', 'health', 'clinic', 'life', 'care', 
 
 description='''
 ++++++++++++++++++++++++++++++++++++++++++++++++++
-Pickup medical AI papers from specified conference and year.
-会議名と年数を指定すると, 医療に関連するAI論文のみを探し出して列挙します.
+Pickup medical AI paper titles and URLs from specified conference and year.
+会議名と年数を指定すると, 医療に関連するAI論文のみを探し出してタイトルとURLを列挙します.
 
 To get from ACL 2019, input like this: python3 medical_ai.py acl 2019
 例えばACL 2019採択論文から探すには本プログラムを python3 medical medical_ai.py acl 2019 と実行してください.
@@ -59,22 +89,27 @@ To get from ACL 2019, input like this: python3 medical_ai.py acl 2019
 Conference name is case insensitive.
 会議名は大文字でも小文字でも構いません.
 
-To specify multiple conferences and year or copy results on clipboard, use options shown below.
-以下に示すオプションを使うと, 複数の国際会議や年度を一括で検索したり, 結果をクリップボードにコピーしたりすることも可能です.
+To output HTML link tags or markdown links, use options below.
+以下に示すオプションを使うと, 結果をHTMLリンクタグやMarkdownリンクとして出力することも可能です.
 ++++++++++++++++++++++++++++++++++++++++++++++++++
 '''
 
 def get_args():
-    parser = argparse.ArgumentParser(description=description, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument('conference', help='specify one conference (e.g. acl)')
-    parser.add_argument('year', help='specify one year (e.g. 2019)')
+    parser = argparse.ArgumentParser(description=description, formatter_class=argparse.RawTextHelpFormatter)
+    group = parser.add_mutually_exclusive_group()
+    parser.add_argument(dest='conference', help='specify one conference (e.g. acl)')
+    parser.add_argument(dest='year', help='specify one year (e.g. 2019)')
+    parser.add_argument('-q', '--quiet', help='be more quiet', action='store_true', dest='quiet')
+    parser.add_argument('--copy', help='copy result to clipboard', action='store_true', dest='copy')
+    group.add_argument('-m', '--md', '--markdown', help='output as markdown links\ncollaborates with --url-only, ignores --title-only\n', action='store_true', dest='markdown')
+    group.add_argument('--html', help='output as HTML <a> tags\ncollaborates with --url-only, ignores --title-only\n', action='store_true', dest='html')
     #parser.add_argument('-c', '--conference', help='specify one or more conferences (e.g. acl)', metavar='<conferences>', type=str)
     #parser.add_argument('-y', '--year', help='specify one or more years (e.g. 2019)', metavar='<years>', type=int)
     #parser.add_argument('-q', '--quiet', action='store_true')
     args = parser.parse_args()
     return args
 
-def medicalai(args, verbose=True, toclipboard=False):
+def medicalai(args):
     # conference_and_year: list or tuple
     #   (conference, year) where:
     #
@@ -118,11 +153,10 @@ def medicalai(args, verbose=True, toclipboard=False):
         source = sources[conference]
 
         # make a connection
-        if verbose:
-            print('Connecting...')
+        print('Connecting...')
         try:
             with urllib.request.urlopen(urls[source]) as res:
-                medicalai_parse(res, verbose, toclipboard, source)
+                medicalai_parse(res, source, args)
         except urllib.error.HTTPError as err:
             print('Error: {} {}'.format(err.code, err.reason))
         except urllib.error.URLError as err:
@@ -139,7 +173,7 @@ def medicalai(args, verbose=True, toclipboard=False):
         print(seps)
         
 
-def medicalai_parse(res, verbose, toclipboard, source):
+def medicalai_parse(res, source, args):
     # get html content
     html = res.read()
     soup = bs4.BeautifulSoup(html, 'html5lib')
@@ -178,26 +212,47 @@ def medicalai_parse(res, verbose, toclipboard, source):
                                 skip = True
                                 prev_title = title
                                 break
-        if verbose:
+        if not args.quiet:
             sys.stdout.write('\rSearching... {} match / {}'.format(len(result), n_total))
             sys.stdout.flush()
-        
-    # result of search    
-    if verbose:
+
+    # prepare output display
+    output = ''
+    if result:
+        if args.markdown:
+            output = '\n'.join([ '[{}]({})\n'.format(title, url) for title, url in result.items() ])
+        elif args.html:
+            output = '<br/>\n'.join([ '<a href="{1}" target="_blank" alt="{0}">{0}</a>'.format(title.replace('"', "'"), url) for title, url in result.items() ])
+        else:
+            output = '\n\n'.join([ '{}\n{}'.format(title, url) for title, url in result.items() ])
+    else:
+        output = 'No medical-like AI papers found.'
+            
+
+    # display output
+    if args.quiet:
+        if result:
+            print('Medical-like AI papers in {} {}: {} / {}'.format(args.conference.upper(), args.year, len(result), n_total))
+        else:
+            print(output)
+    else:
         sys.stdout.write('\n')
         if result:
             print(seps)
-            for key, val in result.items():
-                print('{}\n{}\n'.format(key, val))
+            print(output)
             print(seps)
-            print('Medical-like AI papers: {} / {}'.format(len(result), n_total))
+            print('Medical-like AI papers in {} {}: {} / {}'.format(args.conference.upper(), args.year, len(result), n_total))
             print(seps)
         else:
-            print('No medical-like AI papers found.')
+            print(output)
 
-    #if toclipboard:
-        #pyperclip.copy('\n\n'.join(['\n'.join(r) for r in result]))
-    
+            
+    # copy onto clipboard if needed
+    if args.copy:
+        pyperclip.copy(output)
+        print('Copied this result to clipboard.')
+
+    # return OrderedDict
     return result
 
 
