@@ -230,7 +230,7 @@ def medicalai_parse(res, query):
     # copy onto clipboard if needed
     if query.config.copy:
         pyperclip.copy(output)
-        print('Copied this result to clipboard.')
+        print(' * * * Copied this result to clipboard * * *')
 
     # return OrderedDict
     return result
