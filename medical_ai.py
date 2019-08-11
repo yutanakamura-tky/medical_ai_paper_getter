@@ -1,10 +1,80 @@
+import argparse
 import bs4
+import collections
 import pyperclip
 import sys
 import urllib
 import urllib.request
 
-def medicalai(conference_and_year, verbose=True, toclipboard=False):
+'''
+class Modality():
+    def __init__(self):
+        self.conferences = []
+
+class Conference():
+    def __init__(self):
+        self.source = None
+
+class Source():
+    def __init__(self):
+        self.source = None
+
+nlp = Modality()
+cv = Modality()
+acl = Conference()
+'''
+        
+conferences = { 'NLP' : ['acl', 'anlp', 'cl', 'conll', 'eacl', 'emnlp', 'naacl',\
+                         'semeval', 'tacl', 'ws', 'alta', 'coling', 'hlt',\
+                         'ijcnlp', 'jep-taln-recital', 'lrec', 'muc', 'paclic', 'ranlp',\
+                         'rocling-ijclclp', 'tinlap', 'tipster'],\
+                'ML' : ['nips', 'icml', 'iclr', 'ijcnn', 'ijcai'],\
+                'CV' : ['cvpr', 'iccv']}
+
+sources = {}
+
+for conf in conferences['NLP']:
+    sources[conf] = 'aclweb'
+for conf in conferences['ML']:
+    sources[conf] = 'dblp'
+for conf in conferences['CV']:
+    sources[conf] = 'dblp'
+
+
+queries = ['medic', 'biomedic', 'bioMedic', 'health', 'clinic', 'life', 'care', 'pharm', 'drug', 'surg',\
+           'emergency', 'ICU', 'hospital', 'patient', 'doctor', 'disease', 'illness', 'symptom', 'treatment',\
+           'cancer', 'psycholog', 'psychiat', 'mental', 'radiol', 'patho', 'x-ray', 'x-Ray', 'mammogr', 'CT', 'MRI', 'radiograph', 'tomograph',\
+           'magnetic']
+
+
+
+description='''
+++++++++++++++++++++++++++++++++++++++++++++++++++
+Pickup medical AI papers from specified conference and year.
+会議名と年数を指定すると, 医療に関連するAI論文のみを探し出して列挙します.
+
+To get from ACL 2019, input like this: python3 medical_ai.py acl 2019
+例えばACL 2019採択論文から探すには本プログラムを python3 medical medical_ai.py acl 2019 と実行してください.
+
+Conference name is case insensitive.
+会議名は大文字でも小文字でも構いません.
+
+To specify multiple conferences and year or copy results on clipboard, use options shown below.
+以下に示すオプションを使うと, 複数の国際会議や年度を一括で検索したり, 結果をクリップボードにコピーしたりすることも可能です.
+++++++++++++++++++++++++++++++++++++++++++++++++++
+'''
+
+def get_args():
+    parser = argparse.ArgumentParser(description=description, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument('conference', help='specify one conference (e.g. acl)')
+    parser.add_argument('year', help='specify one year (e.g. 2019)')
+    #parser.add_argument('-c', '--conference', help='specify one or more conferences (e.g. acl)', metavar='<conferences>', type=str)
+    #parser.add_argument('-y', '--year', help='specify one or more years (e.g. 2019)', metavar='<years>', type=int)
+    #parser.add_argument('-q', '--quiet', action='store_true')
+    args = parser.parse_args()
+    return args
+
+def medicalai(args, verbose=True, toclipboard=False):
     # conference_and_year: list or tuple
     #   (conference, year) where:
     #
@@ -33,31 +103,19 @@ def medicalai(conference_and_year, verbose=True, toclipboard=False):
     # toclipboard: bool
     #   copy paper names and URLs on clipboard if set True
     
-    conference, year = conference_and_year
-
-    conferences = { 'NLP' : ['acl', 'anlp', 'cl', 'conll', 'eacl', 'emnlp', 'naacl',\
-                             'semeval', 'tacl', 'ws', 'alta', 'coling', 'hlt',\
-                             'ijcnlp', 'jep-taln-recital', 'lrec', 'muc', 'paclic', 'ranlp',\
-                            'rocling-ijclclp', 'tinlap', 'tipster'],\
-                    'ML' : ['nips', 'icml', 'iclr', 'ijcnn', 'ijcai'],\
-                    'CV' : ['cvpr', 'iccv']}
-
-    sources = {}
-
-    for conf in conferences['NLP']:
-        sources[conf] = 'aclweb'
-    for conf in conferences['ML']:
-        sources[conf] = 'dblp'
-    for conf in conferences['CV']:
-        sources[conf] = 'dblp'
+    conference = args.conference.lower()
+    year = str(args.year)
+  
+    global conferences
+    global sources
     
-    urls = { 'aclweb' : 'https://aclweb.org/anthology/events/{}-{}'.format(conference.lower(), str(year)),\
-             'dblp' : 'https://dblp.org/db/conf/{0}/{0}{1}.html'.format(conference.lower(), str(year))}
+    urls = { 'aclweb' : 'https://aclweb.org/anthology/events/{}-{}'.format(conference, year),\
+             'dblp' : 'https://dblp.org/db/conf/{0}/{0}{1}.html'.format(conference, year)}
 
     
     # check conference name
     try:
-        source = sources[conference.lower()]
+        source = sources[conference]
 
         # make a connection
         if verbose:
@@ -87,15 +145,11 @@ def medicalai_parse(res, verbose, toclipboard, source):
     soup = bs4.BeautifulSoup(html, 'html5lib')
     
     # query
-    queries = ['medic', 'biomedic', 'bioMedic', 'health', 'clinic', 'life', 'care', 'pharm', 'drug', 'surg',
-               'emergency', 'ICU', 'hospital', 'patient', 'doctor', 'disease', 'illness', 'symptom', 'treatment',
-               'cancer', 'psycholog', 'psychiat', 'mental', 'radiol', 'patho', 'x-ray', 'x-Ray', 'mammogr', 'CT', 'MRI', 'radiograph', 'tomograph',
-               'magnetic']
+    global queries
 
-    result = []
+    result = collections.OrderedDict()
     prev_title = ''
     n_total = 0
-    n_match = 0
     seps = '=' * 35
 
     selector = {'aclweb' : 'a[class="align-middle"]',\
@@ -114,40 +168,40 @@ def medicalai_parse(res, verbose, toclipboard, source):
                             if source == 'aclweb':
                                 link = tag.attrs['href']
                                 if link.startswith('/anthology/paper'):
-                                    result.append([title, 'https://aclweb.org' + link])
-                                    n_match += 1
+                                    result[title] = 'https://aclweb.org' + link
                                     skip = True
                                     prev_title = title
                                     break
                             elif source == 'dblp':
                                 link = tag.parent.parent.contents[2].ul.li.div.a['href']
-                                result.append([title, link])
-                                n_match += 1
+                                result[title] = link
                                 skip = True
                                 prev_title = title
                                 break
         if verbose:
-            sys.stdout.write('\rSearching... {} match / {}'.format(n_match, n_total))
+            sys.stdout.write('\rSearching... {} match / {}'.format(len(result), n_total))
             sys.stdout.flush()
         
     # result of search    
     if verbose:
         sys.stdout.write('\n')
-        if n_match > 0:
+        if result:
             print(seps)
-            print('\n\n'.join(['\n'.join(r) for r in result]))
+            for key, val in result.items():
+                print('{}\n{}\n'.format(key, val))
             print(seps)
-            print('Medical-like AI papers: {} / {}'.format(n_match, n_total))
+            print('Medical-like AI papers: {} / {}'.format(len(result), n_total))
             print(seps)
         else:
             print('No medical-like AI papers found.')
 
-    if toclipboard:
-        pyperclip.copy('\n\n'.join(['\n'.join(r) for r in result]))
+    #if toclipboard:
+        #pyperclip.copy('\n\n'.join(['\n'.join(r) for r in result]))
     
     return result
 
 
 if __name__ == '__main__':
-    medicalai(input("Input conference name and year (e.g. 'naacl 2019') : ").split(),
-           toclipboard=bool(input('Copy result on clipboard? (True/False) : ')))
+    args = get_args()
+    medicalai(args)
+    #medicalai([args.conference, args.year], toclipboard=input('Copy result on clipboard? (y/n) : '))
