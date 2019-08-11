@@ -6,53 +6,6 @@ import sys
 import urllib
 import urllib.request
 
-'''
-class Modality():
-    def __init__(self):
-        self.conferences = []
-
-class Conference():
-    def __init__(self):
-        self.source = None
-    def url(self, conference, year):
-        return self.source.url(self, conference, year)
-
-class Source():
-    def __init__(self):
-        self.selector = ''
-        self.url_container = ''
-    def url(self, conference, year):
-        return self.url_container.format(conference, year)
-
-aclweb = Source()
-aclweb.selector = 'a[class="align-middle"]'
-aclweb.url_container = 'https://aclweb.org/anthology/events/{}-{}'
-
-dblp = Source()
-dblp.selector = 'span[class="title"]'
-dblp.url_container = 'https://dblp.org/db/conf/{0}/{0}{1}.html'
-
-acl = Conference()
-anlp = Conference()
-cl = Conference()
-conll = Conference()
-eacl = Conference()
-emnlp = Conference()
-naacl = Conference()
-semeval = Conference()
-tacl = Conference()
-ws = Conference()
-alta = Conference()
-hlt = Conference()
-ijcnlp = Conference()
-jep-taln-recital = Conference()
-
-
-
-nlp = Modality()
-cv = Modality()
-acl = Conference()
-'''
 
 # consts
 
@@ -100,35 +53,30 @@ To output HTML link tags or markdown links, use options below.
 '''
 
 
-# get args when executed via command lines
+
+# get args when executed via command-line
 
 def get_args():
     parser = argparse.ArgumentParser(description=description, formatter_class=argparse.RawTextHelpFormatter)
-    group = parser.add_mutually_exclusive_group()
+    group_output = parser.add_mutually_exclusive_group()
+    group_less = parser.add_mutually_exclusive_group()
     parser.add_argument(dest='conference', help='specify one conference (e.g. acl)')
     parser.add_argument(dest='year', help='specify one year (e.g. 2019)')
     parser.add_argument('-q', '--quiet', help='be more quiet', action='store_true', dest='quiet')
     parser.add_argument('--copy', help='copy result to clipboard', action='store_true', dest='copy')
-    group.add_argument('-m', '--md', '--markdown', help='output as markdown links\ncollaborates with --url-only, ignores --title-only\n', action='store_true', dest='markdown')
-    group.add_argument('--html', help='output as HTML <a> tags\ncollaborates with --url-only, ignores --title-only\n', action='store_true', dest='html')
-    #parser.add_argument('-c', '--conference', help='specify one or more conferences (e.g. acl)', metavar='<conferences>', type=str)
-    #parser.add_argument('-y', '--year', help='specify one or more years (e.g. 2019)', metavar='<years>', type=int)
+    group_output.add_argument('-m', '--md', '--markdown', help='output as markdown links\ncollaborates with --url-only\nignores --title-only\n', action='store_true', dest='markdown')
+    group_output.add_argument('--html', help='output as HTML <a> tags\ncollaborates with --url-only\nignores --title-only\n', action='store_true', dest='html')
+    group_less.add_argument('--title-only', help='output paper title only', action='store_true', dest='title_only')
+    group_less.add_argument('--url-only', help='output paper URL only', action='store_true', dest='url_only')
     args = parser.parse_args()
     return args
 
-class Query():
-    def __init__(self):
-        self.conference = None
-        self.year = None
-        self.res = None
-        self.args = None
 
-# 
-        
+
+# throw HTTP request
+
 def medicalai(conference, year, *config):
-    # conference_and_year: list or tuple
-    #   (conference, year) where:
-    #
+    # <input>
     #   conference: str
     #
     #     for natural language processing conferences:
@@ -145,17 +93,30 @@ def medicalai(conference, year, *config):
     #     for computer vision conferences:
     #     ('cvpr', 'iccv')
     #
-    #    year: str or int
-    #      (1965 or greater)
+    #   year: str or int (1965 or greater)
+    #
+    #   *config: argparse.Namespace object (optional)
+    #
+    # <output>
+    #   collections.OrderedDict {<PAPER_TITLE>:<PAPER_URL>}
     
     global conferences
     global sources
     global url_container
 
+    class Query():
+        def __init__(self):
+            self.conference = None
+            self.year = None
+            self.res = None
+            self.config = None
+            self.url = None
+            self.source = None
+
     query = Query()
     query.conference = conference.lower()
     query.year = str(year)
-    query.args = args
+    query.config = config[0]
     
     # check conference name
     try:
@@ -183,6 +144,8 @@ def medicalai(conference, year, *config):
         print(seps)
         
 
+# process received HTTP response
+        
 def medicalai_parse(res, query):
     global selector
     global keywords
@@ -218,27 +181,38 @@ def medicalai_parse(res, query):
                                 skip = True
                                 prev_title = title
                                 break
-        if not query.args.quiet:
+        if not query.config.quiet:
             sys.stdout.write('\rSearching... {} match / {}'.format(len(result), n_total))
             sys.stdout.flush()
 
     # prepare output display
     output = ''
     if result:
-        if query.args.markdown:
-            output = '\n'.join([ '[{}]({})\n'.format(title, url) for title, url in result.items() ])
-        elif query.args.html:
-            output = '<br/>\n'.join([ '<a href="{1}" target="_blank" alt="{0}">{0}</a>'.format(title.replace('"', "'"), url) for title, url in result.items() ])
+        if query.config.markdown:
+            if query.config.url_only:
+                output = '\n'.join([ '[{0}]({0})'.format(url) for url in result.values() ])
+            else:
+                output = '\n'.join([ '[{0}]({1})'.format(title, url) for title, url in result.items() ])
+        elif query.config.html:
+            if query.config.url_only:
+                output = '<br/>\n'.join([ '<a href="{0}" target="_blank" alt="{0}">{0}</a>'.format(url) for url in result.values() ])
+            else:
+                output = '<br/>\n'.join([ '<a href="{1}" target="_blank" alt="{0}">{0}</a>'.format(title.replace('"', "'"), url) for title, url in result.items() ])
         else:
-            output = '\n\n'.join([ '{}\n{}'.format(title, url) for title, url in result.items() ])
+            if query.config.title_only:
+                output = '\n'.join(list(result.keys()))
+            elif query.config.url_only:
+                output = '\n'.join(list(result.values()))
+            else:
+                output = '\n\n'.join([ '{0}\n{1}'.format(title, url) for title, url in result.items() ])
     else:
         output = 'No medical-like AI papers found.'
             
 
     # display output
-    if query.args.quiet:
+    if query.config.quiet:
         if result:
-            print('Medical-like AI papers in {} {}: {} / {}'.format(args.conference.upper(), args.year, len(result), n_total))
+            print('Medical-like AI papers in {} {}: {} / {}'.format(query.conference.upper(), query.year, len(result), n_total))
         else:
             print(output)
     else:
@@ -247,14 +221,14 @@ def medicalai_parse(res, query):
             print(seps)
             print(output)
             print(seps)
-            print('Medical-like AI papers in {} {}: {} / {}'.format(args.conference.upper(), args.year, len(result), n_total))
+            print('Medical-like AI papers in {} {}: {} / {}'.format(query.conference.upper(), query.year, len(result), n_total))
             print(seps)
         else:
             print(output)
 
             
     # copy onto clipboard if needed
-    if query.args.copy:
+    if query.config.copy:
         pyperclip.copy(output)
         print('Copied this result to clipboard.')
 
@@ -263,5 +237,5 @@ def medicalai_parse(res, query):
 
 
 if __name__ == '__main__':
-    args = get_args()
-    medicalai(args.conference, args.year, args)
+    config = get_args()
+    medicalai(config.conference, config.year, config)
