@@ -32,6 +32,7 @@ To output HTML link tags or markdown links, use options below.
     parser.add_argument(dest='year', help='specify one year (e.g. 2019)')
     parser.add_argument('-q', '--quiet', help='be more quiet', action='store_true', dest='quiet')
     parser.add_argument('--copy', help='copy result to clipboard', action='store_true', dest='copy')
+    parser.add_argument('-a', '--all', help='also get non-medical AI papers', action='store_true', dest='all')
     group_output.add_argument('-m', '--md', '--markdown', help='output as markdown links\ncollaborates with --url-only\nignores --title-only\n', action='store_true', dest='markdown')
     group_output.add_argument('--html', help='output as HTML <a> tags\ncollaborates with --url-only\nignores --title-only\n', action='store_true', dest='html')
     group_less.add_argument('--title-only', help='output paper title only', action='store_true', dest='title_only')
@@ -150,26 +151,38 @@ def medicalai_parse(res, query):
     # extract articles
     for tag in soup.select(selector[query.source]):
         n_total += 1
-        skip = False
+        tag_used = False
         title = tag.getText()
         if title != prev_title:
-            for keyword in keywords:
-                if not skip:
-                    for kw in (keyword, keyword.upper(), keyword.capitalize()):
-                        if (((' ' + kw) in title) or title.startswith(kw)) and (not skip):
-                            if query.source == 'aclweb':
-                                link = tag.attrs['href']
-                                if link.startswith('/anthology/paper'):
-                                    result[title] = 'https://aclweb.org' + link
-                                    skip = True
+            if not query.config.all:
+                for keyword in keywords:
+                    if not tag_used:
+                        for kw in (keyword, keyword.upper(), keyword.capitalize()):
+                            if (((' ' + kw) in title) or title.startswith(kw)) and (not tag_used):
+                                if query.source == 'aclweb':
+                                    link = tag.attrs['href']
+                                    if link.startswith('/anthology/paper'):
+                                        result[title] = 'https://aclweb.org' + link
+                                        tag_used = True
+                                        prev_title = title
+                                        break
+                                elif query.source == 'dblp':
+                                    link = tag.parent.parent.contents[2].ul.li.div.a['href']
+                                    result[title] = link
+                                    tag_used = True
                                     prev_title = title
                                     break
-                            elif query.source == 'dblp':
-                                link = tag.parent.parent.contents[2].ul.li.div.a['href']
-                                result[title] = link
-                                skip = True
-                                prev_title = title
-                                break
+            elif query.config.all:
+                if query.source == 'aclweb':
+                    link = tag.attrs['href']
+                    if link.startswith('/anthology/paper'):
+                        result[title] = 'https://aclweb.org' + link
+                        prev_title = title
+                elif query.source == 'dblp':
+                    link = tag.parent.parent.contents[2].ul.li.div.a['href']
+                    result[title] = link
+                    prev_title = title
+            
         if not query.config.quiet:
             sys.stdout.write('\rSearching... {} match / {}'.format(len(result), n_total))
             sys.stdout.flush()
