@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 import argparse
 import bs4
 import collections
@@ -28,11 +30,10 @@ To output HTML link tags or markdown links, use options below.
     parser = argparse.ArgumentParser(description=description, formatter_class=argparse.RawTextHelpFormatter)
     group_output = parser.add_mutually_exclusive_group()
     group_less = parser.add_mutually_exclusive_group()
-    parser.add_argument(dest='conference', help='specify one conference (e.g. acl)')
-    parser.add_argument(dest='year', help='specify one year (e.g. 2019)')
+    parser.add_argument(dest='conferences_and_years', nargs='+', help='speficy conferences and years\n example1: acl 2019\n example2: acl naacl 2019\n example3: acl 2018 2019\n example4: acl naacl 2018 2019')
     parser.add_argument('-q', '--quiet', help='be more quiet', action='store_true', dest='quiet')
     parser.add_argument('--copy', help='copy result to clipboard', action='store_true', dest='copy')
-    parser.add_argument('-a', '--all', help='also get non-medical AI papers', action='store_true', dest='all')
+    parser.add_argument('-a', '--all', help='get also non-medical AI papers', action='store_true', dest='all')
     group_output.add_argument('-m', '--md', '--markdown', help='output as markdown links\ncollaborates with --url-only\nignores --title-only\n', action='store_true', dest='markdown')
     group_output.add_argument('--html', help='output as HTML <a> tags\ncollaborates with --url-only\nignores --title-only\n', action='store_true', dest='html')
     group_less.add_argument('--title-only', help='output paper title only', action='store_true', dest='title_only')
@@ -46,7 +47,7 @@ To output HTML link tags or markdown links, use options below.
 
 def medicalai(conference, year, *config):
     # <input>
-    #   conference: str
+    #   conference: str or list
     #
     #     for natural language processing conferences:
     #     ('acl', 'anlp', 'cl', 'conll', 'eacl',
@@ -62,7 +63,7 @@ def medicalai(conference, year, *config):
     #     for computer vision conferences:
     #     ('cvpr', 'iccv')
     #
-    #   year: str or int (1965 or greater)
+    #   year: str or int or list (1965 or greater)
     #
     #   *config: argparse.Namespace object (optional)
     #
@@ -97,35 +98,47 @@ def medicalai(conference, year, *config):
             self.url = None
             self.source = None
 
-    query = Query()
-    query.conference = conference.lower()
-    query.year = str(year)
-    query.config = config[0]
-    
-    # check conference name
-    try:
-        query.source = sources[conference]
-        query.url = url_container[query.source].format(query.conference, query.year)
+    queries = []
 
-        # make a connection
-        print('Connecting...')
+    if type(conference) is not list:
+        conference = [conference]
+    if type(year) is not list:
+        year = [year]
+
+    for c in conference:
+        for y in year:
+            query = Query()
+            query.conference = c.lower()
+            query.year = str(y)
+            query.config = config[0]
+            
+            # check conference name
+            try:
+                query.source = sources[query.conference]
+                query.url = url_container[query.source].format(query.conference, query.year)
+                queries.append(query)
+            except KeyError:
+                seps = '=' * 35
+                print("Error: unavailable conference '{}'.".format(query.conference))
+                print(seps)
+                print('Available conferences:')
+                print('\tML, AI:\n\t\t{}'.format(', '.join(conferences['ML'])))
+                print('\tCV:\n\t\t{}'.format(', '.join(conferences['CV'])))
+                print('\tNLP:\n\t\t{}'.format(', '.join(conferences['NLP'])))
+                print(seps)
+                
+    
+    # make connections
+    for q in queries:
+        print('Connecting for {} {} ...'.format(q.conference.upper(), q.year))
         try:
-            with urllib.request.urlopen(query.url) as res:
-                medicalai_parse(res, query)
+            with urllib.request.urlopen(q.url) as res:
+                medicalai_parse(res, q)
         except urllib.error.HTTPError as err:
             print('Error: {} {}'.format(err.code, err.reason))
         except urllib.error.URLError as err:
             print('Error: {}'.format(err.reason))
 
-    except KeyError:
-        seps = '=' * 35
-        print("Error: unavailable conference '{}'.".format(query.conference))
-        print(seps)
-        print('Available conferences:')
-        print('\tML, AI:\n\t\t{}'.format(', '.join(conferences['ML'])))
-        print('\tCV:\n\t\t{}'.format(', '.join(conferences['CV'])))
-        print('\tNLP:\n\t\t{}'.format(', '.join(conferences['NLP'])))
-        print(seps)
         
 
 # process received HTTP response
@@ -139,6 +152,9 @@ def medicalai_parse(res, query):
                 'cancer', 'psycholog', 'psychiat', 'mental', 'radiol', 'patho', 'autopsy', 'x-ray', 'x-Ray', 'mammogr', 'CT', 'MRI', 'radiograph', 'tomograph',\
                 'magnetic']
 
+    url_getter = {'aclweb' : lambda tag: 'https://aclweb.org' + tag.attrs['href'] if tag.attrs['href'].startswith('/anthology/paper') else None,\
+                  'dblp' : lambda tag: tag.parent.parent.contents[2].ul.li.div.a['href']}
+    
     prev_title = ''
     n_total = 0
     seps = '=' * 35
@@ -150,42 +166,37 @@ def medicalai_parse(res, query):
     
     # extract articles
     for tag in soup.select(selector[query.source]):
-        n_total += 1
-        tag_used = False
+        skip = False
         title = tag.getText()
         if title != prev_title:
-            if not query.config.all:
-                for keyword in keywords:
-                    if not tag_used:
+            for keyword in keywords:
+                if not skip:
+                    if not query.config.all:
                         for kw in (keyword, keyword.upper(), keyword.capitalize()):
-                            if (((' ' + kw) in title) or title.startswith(kw)) and (not tag_used):
-                                if query.source == 'aclweb':
-                                    link = tag.attrs['href']
-                                    if link.startswith('/anthology/paper'):
-                                        result[title] = 'https://aclweb.org' + link
-                                        tag_used = True
-                                        prev_title = title
-                                        break
-                                elif query.source == 'dblp':
-                                    link = tag.parent.parent.contents[2].ul.li.div.a['href']
-                                    result[title] = link
-                                    tag_used = True
+                            if (((' ' + kw) in title) or title.startswith(kw)) and (not skip):
+                                url = url_getter[query.source](tag)
+                                if url is not None:
+                                    result[title] = url
+                                    skip = True
                                     prev_title = title
+                                    n_total += 1
                                     break
-            elif query.config.all:
-                if query.source == 'aclweb':
-                    link = tag.attrs['href']
-                    if link.startswith('/anthology/paper'):
-                        result[title] = 'https://aclweb.org' + link
-                        prev_title = title
-                elif query.source == 'dblp':
-                    link = tag.parent.parent.contents[2].ul.li.div.a['href']
-                    result[title] = link
-                    prev_title = title
-            
+                                else:
+                                    pass
+                    else:
+                        url = url_getter[query.source](tag)
+                        if url is not None:
+                            result[title] = url
+                            skip = True
+                            prev_title = title
+                            n_total += 1
+                        else:
+                            pass
+
         if not query.config.quiet:
             sys.stdout.write('\rSearching... {} match / {}'.format(len(result), n_total))
             sys.stdout.flush()
+
 
     # prepare output display
     output = ''
@@ -214,7 +225,10 @@ def medicalai_parse(res, query):
     # display output
     if query.config.quiet:
         if result:
-            print('Medical-like AI papers in {} {}: {} / {}'.format(query.conference.upper(), query.year, len(result), n_total))
+            if not query.config.all:
+                print('Medical-like AI papers in {} {}: {} / {}'.format(query.conference.upper(), query.year, len(result), n_total))
+            else:
+                print('All papers in {} {}: {}'.format(query.conference.upper(), query.year, len(result)))
         else:
             print(output)
     else:
@@ -223,7 +237,10 @@ def medicalai_parse(res, query):
             print(seps)
             print(output)
             print(seps)
-            print('Medical-like AI papers in {} {}: {} / {}'.format(query.conference.upper(), query.year, len(result), n_total))
+            if not query.config.all:
+                print('Medical-like AI papers in {} {}: {} / {}'.format(query.conference.upper(), query.year, len(result), n_total))
+            else:
+                print('All papers in {} {}: {}'.format(query.conference.upper(), query.year, len(result)))
             print(seps)
         else:
             print(output)
@@ -240,4 +257,14 @@ def medicalai_parse(res, query):
 
 if __name__ == '__main__':
     config = get_args()
-    medicalai(config.conference, config.year, config)
+    config.conferences = []
+    config.years = []
+    
+    for value in config.conferences_and_years:
+        try:
+            value = int(value)
+            config.years.append(value)
+        except ValueError:
+            config.conferences.append(value)
+    
+    medicalai(config.conferences, config.years, config)

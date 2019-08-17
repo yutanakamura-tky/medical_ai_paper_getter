@@ -59,6 +59,15 @@ Medical-like AI papers in NIPS 2018: 11 / 1011
 ===================================
 ```
 
+Multiple conferences and years are also available:
+
+```
+python3 medical_ai.py <CONFERENCE1> <CONFERENCE2> ... <YEAR1> <YEAR2> ...
+```
+
+e.g. For ACL 2018 & ACL 2019 & NAACL 2018 & NAACL 2019, input `python3 medical_ai.py acl naacl 2018 2019`.
+
+
 ### Options
 
 
@@ -156,13 +165,18 @@ To output HTML link tags or markdown links, use options below.
 ++++++++++++++++++++++++++++++++++++++++++++++++++
 
 positional arguments:
-  conference            specify one conference (e.g. acl)
-  year                  specify one year (e.g. 2019)
+  conferences_and_years
+                        speficy conferences and years
+                         example1: acl 2019
+                         example2: acl naacl 2019
+                         example3: acl 2018 2019
+                         example4: acl naacl 2018 2019
 
 optional arguments:
   -h, --help            show this help message and exit
   -q, --quiet           be more quiet
   --copy                copy result to clipboard
+  -a, --all             get also non-medical AI papers
   -m, --md, --markdown  output as markdown links
                         collaborates with --url-only
                         ignores --title-only
