@@ -13,12 +13,12 @@ ACL, NAACL, EMNLP, CoNLL, COLING, IJCNLP, EACL, LREC, CL, SEMEVAL, TACL, ALTA, H
 ### Overview
 Run `medical_ai.py` on the shell:
 ```
-python3 medical_ai.py <CONFERENCE> <YEAR>
+python3 medical/ai.py <CONFERENCE> <YEAR>
 ```
 
 e.g. For `'nips 2018'`, you get 11 medical-like conference papers:
 ```
-python3 medical_ai.py nips 2018
+python3 medical/ai.py nips 2018
 Connecting...
 Searching... 11 matches / 1011
 ===================================
@@ -62,10 +62,10 @@ Medical-like AI papers in NIPS 2018: 11 / 1011
 Multiple conferences and years are also available:
 
 ```
-python3 medical_ai.py <CONFERENCE1> <CONFERENCE2> ... <YEAR1> <YEAR2> ...
+python3 medical/ai.py <CONFERENCE1> <CONFERENCE2> ... <YEAR1> <YEAR2> ...
 ```
 
-e.g. For ACL 2018 & ACL 2019 & NAACL 2018 & NAACL 2019, input `python3 medical_ai.py acl naacl 2018 2019`.
+e.g. For ACL 2018 & ACL 2019 & NAACL 2018 & NAACL 2019, input `python3 medical/ai.py acl naacl 2018 2019`.
 
 
 ### Options
@@ -74,7 +74,7 @@ e.g. For ACL 2018 & ACL 2019 & NAACL 2018 & NAACL 2019, input `python3 medical_a
 Use `--html` option to display result as HTML link <a> tags:
 
 ```
-python3 medical_ai.py nips 2018 --html
+python3 medical/ai.py nips 2018 --html
 Connecting...
 Searching... 11 match / 1011
 ===================================
@@ -97,7 +97,7 @@ Medical-like AI papers in NIPS 2018: 11 / 1011
 Use `--markdown` option to display result as markdown links:
 
 ```
-python3 medical_ai.py nips 2018 --markdown
+python3 medical/ai.py nips 2018 --markdown
 Connecting...
 Searching... 11 match / 1011
 ===================================
@@ -120,7 +120,7 @@ Medical-like AI papers in NIPS 2018: 11 / 1011
 Use `--copy` option to copy result onto clipboard:
 
 ```
-python3 medical_ai.py nips 2018 --markdown --copy
+python3 medical/ai.py nips 2018 --markdown --copy
 Connecting...
 Searching... 11 match / 1011
 ===================================
@@ -142,11 +142,11 @@ Medical-like AI papers in NIPS 2018: 11 / 1011
 ```
 
 
-To browse all available options, input `python3 medical_ai.py -h` or `python3 medical_ai.py --help`:
+To browse all available options, input `python3 medical/ai.py -h` or `python3 medical/ai.py --help`:
 
 
 ```
-usage: medical_ai.py [-h] [-q] [--copy] [-m | --html]
+usage: medical/ai.py [-h] [-q] [--copy] [-m | --html]
                      [--title-only | --url-only]
                      conference year
 
@@ -154,8 +154,8 @@ usage: medical_ai.py [-h] [-q] [--copy] [-m | --html]
 Pickup medical AI paper titles and URLs from specified conference and year.
 会議名と年数を指定すると, 医療に関連するAI論文のみを探し出してタイトルとURLを列挙します.
 
-To get from ACL 2019, input like this: python3 medical_ai.py acl 2019
-例えばACL 2019採択論文から探すには本プログラムを python3 medical medical_ai.py acl 2019 と実行してください.
+To get from ACL 2019, input like this: python3 medical/ai.py acl 2019
+例えばACL 2019採択論文から探すには本プログラムを python3 medical medical/ai.py acl 2019 と実行してください.
 
 Conference name is case insensitive.
 会議名は大文字でも小文字でも構いません.
