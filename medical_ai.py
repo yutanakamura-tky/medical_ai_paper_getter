@@ -9,6 +9,25 @@ import urllib
 import urllib.request
 
 
+# keyword-based classification of medical/non-medical AI papers
+
+def title_is_medical(title):
+    keywords = ['medic', 'biomedic', 'bioMedic', 'health', 'clinic', 'EHR', 'MeSH', 'RCT', 'life', 'care', 'pharm', 'food-drug', 'drug', 'surg',\
+                'emergency', 'ICU', 'hospital', 'patient', 'doctor', 'disease', 'illness', 'symptom', 'treatment',\
+                'cancer', 'psycholog', 'psychiat', 'mental', 'radiol', 'patho', 'autopsy', 'x-ray', 'x-Ray', 'mammogr', 'CT', 'MRI', 'radiograph', 'tomograph',\
+                'magnetic']
+
+    for keyword in keywords:
+        for kw in (keyword, keyword.upper(), keyword.capitalize()):
+            if (((' ' + kw) in title) or title.startswith(kw)):
+                return True
+            else:
+                continue
+
+    return False
+
+
+
 # get args when executed via command-line
 
 def get_args():
@@ -45,7 +64,7 @@ To output HTML link tags or markdown links, use options below.
 
 # throw HTTP request
 
-def medicalai(conference, year, *config):
+def search(conference, year, *config):
     # <input>
     #   conference: str or list
     #
@@ -90,13 +109,14 @@ def medicalai(conference, year, *config):
                       'dblp' : 'https://dblp.org/db/conf/{0}/{0}{1}.html'}
 
     class Query():
-        def __init__(self):
-            self.conference = None
-            self.year = None
-            self.res = None
+        def __init__(self, conf, yr):
+            self.conference = conf
+            self.year = yr
             self.config = None
+            self.res = None
             self.url = None
             self.source = None
+            self.config = None
 
     queries = []
 
@@ -107,9 +127,7 @@ def medicalai(conference, year, *config):
 
     for c in conference:
         for y in year:
-            query = Query()
-            query.conference = c.lower()
-            query.year = str(y)
+            query = Query(c.lower(), str(y))
             query.config = config[0]
             
             # check conference name
@@ -133,32 +151,37 @@ def medicalai(conference, year, *config):
         print('Connecting for {} {} ...'.format(q.conference.upper(), q.year))
         try:
             with urllib.request.urlopen(q.url) as res:
-                medicalai_parse(res, q)
+                parse(res, q)
         except urllib.error.HTTPError as err:
             print('Error: {} {}'.format(err.code, err.reason))
         except urllib.error.URLError as err:
             print('Error: {}'.format(err.reason))
 
-        
+
+
+class Article():
+    def __init__(self, title='', author=[], abstract='', conference='', year=0, url=''):
+        self.title = title
+        self.author = author
+        self.abstract = abstract
+        self.conference = conference
+        self.year = year
+        self.url = url
+
+
 
 # process received HTTP response
         
-def medicalai_parse(res, query):
+def parse(res, query):
     selector = {'aclweb' : 'a[class="align-middle"]',\
                 'dblp' : 'span[class="title"]'}
-
-    keywords = ['medic', 'biomedic', 'bioMedic', 'health', 'clinic', 'EHR', 'MeSH', 'RCT', 'life', 'care', 'pharm', 'food-drug', 'drug', 'surg',\
-                'emergency', 'ICU', 'hospital', 'patient', 'doctor', 'disease', 'illness', 'symptom', 'treatment',\
-                'cancer', 'psycholog', 'psychiat', 'mental', 'radiol', 'patho', 'autopsy', 'x-ray', 'x-Ray', 'mammogr', 'CT', 'MRI', 'radiograph', 'tomograph',\
-                'magnetic']
 
     url_getter = {'aclweb' : lambda tag: 'https://aclweb.org' + tag.attrs['href'] if tag.attrs['href'].startswith('/anthology/paper') else None,\
                   'dblp' : lambda tag: tag.parent.parent.contents[2].ul.li.div.a['href']}
     
     prev_title = ''
     n_total = 0
-    seps = '=' * 35
-    result = collections.OrderedDict()
+    articles = []
     
     # get html content
     html = res.read()
@@ -169,78 +192,68 @@ def medicalai_parse(res, query):
         skip = False
         title = tag.getText()
         if title != prev_title:
-            for keyword in keywords:
-                if not skip:
-                    if not query.config.all:
-                        for kw in (keyword, keyword.upper(), keyword.capitalize()):
-                            if (((' ' + kw) in title) or title.startswith(kw)) and (not skip):
-                                url = url_getter[query.source](tag)
-                                if url is not None:
-                                    result[title] = url
-                                    skip = True
-                                    prev_title = title
-                                    n_total += 1
-                                    break
-                                else:
-                                    pass
-                    else:
-                        url = url_getter[query.source](tag)
-                        if url is not None:
-                            result[title] = url
-                            skip = True
-                            prev_title = title
-                            n_total += 1
-                        else:
-                            pass
+            n_total += 1
+            prev_title = title
+            if query.config.all or title_is_medical(title):
+                url = url_getter[query.source](tag)                
+                if url is None:
+                    continue
+                else:
+                    article = Article(title=title, url=url, conference=query.conference, year=query.year)
+                    articles.append(article)
 
         if not query.config.quiet:
-            sys.stdout.write('\rSearching... {} match / {}'.format(len(result), n_total))
+            sys.stdout.write('\rSearching... {} match / {}'.format(len(articles), n_total))
             sys.stdout.flush()
 
 
     # prepare output display
     output = ''
-    if result:
+    
+    if articles:
         if query.config.markdown:
             if query.config.url_only:
-                output = '\n'.join([ '[{0}]({0})'.format(url) for url in result.values() ])
+                output = '\n'.join([ '[{0}]({0})'.format(article.url) for article in articles ])
             else:
-                output = '\n'.join([ '[{0}]({1})'.format(title, url) for title, url in result.items() ])
+                output = '\n'.join([ '[{0}]({1})'.format(article.title, article.url) for article in articles ])
         elif query.config.html:
             if query.config.url_only:
-                output = '<br/>\n'.join([ '<a href="{0}" target="_blank" alt="{0}">{0}</a>'.format(url) for url in result.values() ])
+                output = '<br/>\n'.join([ '<a href="{0}" target="_blank" alt="{0}">{0}</a>'.format(article.url) for article in articles ])
             else:
-                output = '<br/>\n'.join([ '<a href="{1}" target="_blank" alt="{0}">{0}</a>'.format(title.replace('"', "'"), url) for title, url in result.items() ])
+                output = '<br/>\n'.join([ '<a href="{1}" target="_blank" alt="{0}">{0}</a>'.format(article.title.replace('"', "'"), article.url) for article in articles ])
         else:
             if query.config.title_only:
-                output = '\n'.join(list(result.keys()))
+                output = '\n'.join([ article.title for article in articles ])
             elif query.config.url_only:
-                output = '\n'.join(list(result.values()))
+                output = '\n'.join([ article.url for article in articles ])
             else:
-                output = '\n\n'.join([ '{0}\n{1}'.format(title, url) for title, url in result.items() ])
+                output = '\n\n'.join([ '{0}\n{1}'.format(article.title, article.url) for article in articles ])
     else:
         output = 'No medical-like AI papers found.'
             
 
     # display output
+
+    seps = '=' * 35
+    
     if query.config.quiet:
-        if result:
+        if articles:
             if not query.config.all:
-                print('Medical-like AI papers in {} {}: {} / {}'.format(query.conference.upper(), query.year, len(result), n_total))
+                print('Medical-like AI papers in {} {}: {} / {}'.format(query.conference.upper(), query.year, len(articles), n_total))
             else:
-                print('All papers in {} {}: {}'.format(query.conference.upper(), query.year, len(result)))
+                print('All papers in {} {}: {}'.format(query.conference.upper(), query.year, len(articles)))
         else:
             print(output)
     else:
         sys.stdout.write('\n')
-        if result:
+        if articles:
             print(seps)
             print(output)
             print(seps)
             if not query.config.all:
-                print('Medical-like AI papers in {} {}: {} / {}'.format(query.conference.upper(), query.year, len(result), n_total))
+                print('Medical-like AI papers in {} {}: {} / {}'.format(query.conference.upper(), query.year, len(articles), n_total))
             else:
-                print('All papers in {} {}: {}'.format(query.conference.upper(), query.year, len(result)))
+                print('All papers in {} {}: {}'.format(query.conference.upper(), query.year, len(articles)))
             print(seps)
         else:
             print(output)
@@ -252,7 +265,7 @@ def medicalai_parse(res, query):
         print(' * * * Copied this result to clipboard * * *')
 
     # return OrderedDict
-    return result
+    return articles
 
 
 if __name__ == '__main__':
@@ -267,4 +280,4 @@ if __name__ == '__main__':
         except ValueError:
             config.conferences.append(value)
     
-    medicalai(config.conferences, config.years, config)
+    search(config.conferences, config.years, config)
