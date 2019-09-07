@@ -36,8 +36,8 @@ def get_args():
 Pickup medical AI paper titles and URLs from specified conference and year.
 会議名と年数を指定すると, 医療に関連するAI論文のみを探し出してタイトルとURLを列挙します.
 
-To get from ACL 2019, input like this: python3 medical_ai.py acl 2019
-例えばACL 2019採択論文から探すには本プログラムを python3 medical medical_ai.py acl 2019 と実行してください.
+To get from ACL 2019, input like this: python3 medical/ai.py acl 2019
+例えばACL 2019採択論文から探すには本プログラムを python3 medical/ai.py acl 2019 と実行してください.
 
 Conference name is case insensitive.
 会議名は大文字でも小文字でも構いません.
