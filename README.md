@@ -12,6 +12,8 @@ ACL, NAACL, EMNLP, CoNLL, COLING, IJCNLP, EACL, LREC, CL, SEMEVAL, TACL, ALTA, H
 
 # Usage(1): In Python3 Code
 
+#### Overview
+
 Import module:
 
 ```Python3
@@ -20,7 +22,7 @@ import medical.ai
 
 To get medical-like AI papers in ACL 2019, create a Query instance and use .search() method:
 
-```
+```Python3
 query = medical.ai.Query(conference='cvpr', year=2018)
 result = query.search()
 ```
@@ -43,7 +45,7 @@ Medical-like AI papers in CVPR 2018: 13 / 980
 ===================================
 ```
 
-```
+```Python3
 for article in result[0]:
     print(article.title)
     print(article.url)
@@ -59,8 +61,10 @@ Anatomical Priors in Convolutional Networks for Unsupervised Biomedical Segmenta
 http://openaccess.thecvf.com/content_cvpr_2018/html/Dalca_Anatomical_Priors_in_CVPR_2018_paper.html
 ```
 
+#### Quiet Mode
+
 If you want the result to be more quiet, use config as this:
-```
+```Python3
 config = medical.ai.Config(quiet=True)
 articles = query.search(config)
 ```
