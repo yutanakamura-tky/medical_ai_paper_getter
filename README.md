@@ -9,7 +9,68 @@ CVPR, ICCV
 ### Natural Language Processing
 ACL, NAACL, EMNLP, CoNLL, COLING, IJCNLP, EACL, LREC, CL, SEMEVAL, TACL, ALTA, HLT, JEP-TALN-RECITAL, MUC, PACLIC, RANLP, ROCLING-IJCLCLP, TINLAP, TIPSTER
 
-# Usage(1): via command-line
+
+# Usage(1): In Python3 Code
+
+Import module:
+
+```Python3
+import medical.ai
+```
+
+To get medical-like AI papers in ACL 2019, create a Query instance and use .search() method:
+
+```
+query = medical.ai.Query(conference='cvpr', year=2018)
+result = query.search()
+```
+
+With titles and URLs on standard output, you obtain information of papers as a list of Article object:
+
+```
+Connecting for CVPR 2018 ...
+Searching... 13 match / 980
+===================================
+Clinical Skin Lesion Diagnosis Using Representations Inspired by Dermatologist Criteria.
+http://openaccess.thecvf.com/content_cvpr_2018/html/Yang_Clinical_Skin_Lesion_CVPR_2018_paper.html
+
+    ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+
+Anatomical Priors in Convolutional Networks for Unsupervised Biomedical Segmentation.
+http://openaccess.thecvf.com/content_cvpr_2018/html/Dalca_Anatomical_Priors_in_CVPR_2018_paper.html
+===================================
+Medical-like AI papers in CVPR 2018: 13 / 980
+===================================
+```
+
+```
+for article in result[0]:
+    print(article.title)
+    print(article.url)
+```
+
+```
+Clinical Skin Lesion Diagnosis Using Representations Inspired by Dermatologist Criteria.
+http://openaccess.thecvf.com/content_cvpr_2018/html/Yang_Clinical_Skin_Lesion_CVPR_2018_paper.html
+
+    ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+
+Anatomical Priors in Convolutional Networks for Unsupervised Biomedical Segmentation.
+http://openaccess.thecvf.com/content_cvpr_2018/html/Dalca_Anatomical_Priors_in_CVPR_2018_paper.html
+```
+
+If you want the result to be more quiet, use config as this:
+```
+config = medical.ai.Config(quiet=True)
+articles = query.search(config)
+```
+
+
+
+
+
+
+# Usage(2): via command-line
 ### Overview
 Run `medical_ai.py` on the shell:
 ```

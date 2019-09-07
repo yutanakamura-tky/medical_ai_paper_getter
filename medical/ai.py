@@ -55,6 +55,7 @@ class Config():
         self.url_only = url_only
 
 
+        
 class Article():
     def __init__(self, title='', author=[], abstract='', conference='', year=0, url=''):
         self.title = title
@@ -65,7 +66,7 @@ class Article():
         self.url = url
 
 
-
+        
 class Medical_Classifier():
     # keyword-based classification of medical/non-medical AI papers
     def __init__(self):
@@ -250,6 +251,7 @@ class Query():
             self.year = year
             
         self.queries = []
+        self.result = []
 
         for c in self.conference:
             for y in self.year:
@@ -279,11 +281,12 @@ class Query():
             print('Connecting for {} {} ...'.format(q.conference.upper(), q.year))
             try:
                 with urllib.request.urlopen(q.url) as res:
-                    parser.parse(res, q)
+                    self.result.append(parser.parse(res, q))
             except urllib.error.HTTPError as err:
                 print('Error: {} {}'.format(err.code, err.reason))
             except urllib.error.URLError as err:
                 print('Error: {}'.format(err.reason))
+        return self.result
 
 
 
