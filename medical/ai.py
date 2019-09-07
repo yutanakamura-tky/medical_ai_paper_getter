@@ -5,6 +5,7 @@ import bs4
 import collections
 import pyperclip
 import sys
+import threading
 import urllib
 import urllib.request
 
@@ -35,14 +36,18 @@ class Article():
         
 class Medical_Classifier():
     # keyword-based classification of medical/non-medical AI papers
+
+    # class variables
+    keywords = ['medic', 'biomedic', 'bioMedic', 'health', 'clinic', 'EHR', 'MeSH', 'RCT', 'life', 'care', 'pharm', 'food-drug', 'drug', 'surg',\
+                'emergency', 'ICU', 'hospital', 'patient', 'doctor', 'disease', 'illness', 'symptom', 'treatment',\
+                'cancer', 'psycholog', 'psychiat', 'mental', 'radiol', 'patho', 'autopsy', 'x-ray', 'x-Ray', 'mammogr', 'CT', 'MRI', 'radiograph', 'tomograph',\
+                'magnetic']
+    
     def __init__(self):
-        self.keywords = ['medic', 'biomedic', 'bioMedic', 'health', 'clinic', 'EHR', 'MeSH', 'RCT', 'life', 'care', 'pharm', 'food-drug', 'drug', 'surg',\
-                          'emergency', 'ICU', 'hospital', 'patient', 'doctor', 'disease', 'illness', 'symptom', 'treatment',\
-                          'cancer', 'psycholog', 'psychiat', 'mental', 'radiol', 'patho', 'autopsy', 'x-ray', 'x-Ray', 'mammogr', 'CT', 'MRI', 'radiograph', 'tomograph',\
-                          'magnetic']
+        pass
 
     def title_is_medical(self, title):
-        for keyword in self.keywords:
+        for keyword in Medical_Classifier.keywords:
             for kw in (keyword, keyword.upper(), keyword.capitalize()):
                 if (((' ' + kw) in title) or title.startswith(kw)):
                     return True
@@ -54,12 +59,15 @@ class Medical_Classifier():
 
 class HTMLParser():
     # process received HTTP response
-    def __init__(self):
-        self.selector = {'aclweb' : 'a[class="align-middle"]',\
-                    'dblp' : 'span[class="title"]'}
 
-        self.url_getter = {'aclweb' : lambda tag: 'https://aclweb.org' + tag.attrs['href'] if tag.attrs['href'].startswith('/anthology/paper') else None,\
-                      'dblp' : lambda tag: tag.parent.parent.contents[2].ul.li.div.a['href']}
+    # class variables
+    selector = {'aclweb' : 'a[class="align-middle"]',\
+                'dblp' : 'span[class="title"]'}
+    url_getter = {'aclweb' : lambda tag: 'https://aclweb.org' + tag.attrs['href'] if tag.attrs['href'].startswith('/anthology/paper') else None,\
+                  'dblp' : lambda tag: tag.parent.parent.contents[2].ul.li.div.a['href']}
+    
+    def __init__(self):
+        pass
 
     def parse(self, res, query):
         prev_title = ''
@@ -73,14 +81,14 @@ class HTMLParser():
         soup = bs4.BeautifulSoup(html, 'html5lib')
     
         # extract articles
-        for tag in soup.select(self.selector[query.source]):
+        for tag in soup.select(HTMLParser.selector[query.source]):
             skip = False
             title = tag.getText()
             if title != prev_title:
                 n_total += 1
                 prev_title = title
                 if query.config.all or classifier.title_is_medical(title):
-                    url = self.url_getter[query.source](tag)                
+                    url = HTMLParser.url_getter[query.source](tag)                
                     if url is None:
                         continue
                     else:
@@ -162,6 +170,22 @@ class Child_Query():
         self.config = None
 
 
+class MyThread(threading.Thread):
+    def __init__(self, query, parser, out):
+        super().__init__()
+        self.query = query
+        self.parser = parser
+        self.out = out
+    def run(self):
+        print('Connecting for {} {} ...'.format(self.query.conference.upper(), self.query.year))
+        try:
+            with urllib.request.urlopen(self.query.url) as res:
+                self.out[(self.query.conference.upper(), self.query.year)] = self.parser.parse(res, self.query)
+        except urllib.error.HTTPError as err:
+            print('Error: {} {}'.format(err.code, err.reason))
+        except urllib.error.URLError as err:
+            print('Error: {}'.format(err.reason))
+
         
 
 class Query():
@@ -219,7 +243,7 @@ class Query():
             self.year = year
             
         self.queries = []
-        self.result = []
+        self.result = {}
 
         for c in self.conference:
             for y in self.year:
@@ -240,7 +264,21 @@ class Query():
                     print('\tNLP:\n\t\t{}'.format(', '.join(self.conference_map['NLP'])))
                     print(seps)
 
-    def search(self, config=Config()):        
+    def search(self, config=Config()):
+        # throw HTTP request
+        threads = []
+        parser = HTMLParser()
+        for q in self.queries:
+            q.config = config
+            threads.append(MyThread(query=q, parser=parser, out=self.result))
+        for thread in threads:
+            thread.start()
+        for thread in threads:
+            thread.join()
+        return self.result
+
+        
+        '''
         # throw HTTP request
         parser = HTMLParser()
         for q in self.queries:
@@ -254,6 +292,7 @@ class Query():
             except urllib.error.URLError as err:
                 print('Error: {}'.format(err.reason))
         return self.result
+        '''
 
 
 
