@@ -12,7 +12,7 @@ ACL, NAACL, EMNLP, CoNLL, COLING, IJCNLP, EACL, LREC, CL, SEMEVAL, TACL, ALTA, H
 
 # Usage(1): In Python3 Code
 
-#### Overview
+### Overview
 
 Import module:
 
@@ -61,11 +61,13 @@ Anatomical Priors in Convolutional Networks for Unsupervised Biomedical Segmenta
 http://openaccess.thecvf.com/content_cvpr_2018/html/Dalca_Anatomical_Priors_in_CVPR_2018_paper.html
 ```
 
-#### Quiet Mode
+### Quiet Mode
 
 If you want the result to be more quiet, use config as this:
 ```Python3
+import medical.ai
 config = medical.ai.Config(quiet=True)
+query = medical.ai.Query(conference='cvpr', year=2018)
 articles = query.search(config)
 ```
 
