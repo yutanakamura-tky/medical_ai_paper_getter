@@ -23,16 +23,6 @@ class Config():
 
 
         
-class Article():
-    def __init__(self, title='', author=[], abstract='', conference_name='', year=0, url=''):
-        self.title = title
-        self.author = author
-        self.abstract = abstract
-        self.conference_name = conference_name
-        self.year = year
-        self.url = url
-        self.medical = False
-
 
         
 class MedicalClassifier():
@@ -70,10 +60,10 @@ class HTMLParser():
     def __init__(self):
         pass
 
-    def parse(self, res, query):
+    def parse(self, res, conference):
         prev_title = ''
         n_total = 0
-        articles = []
+        papers = []
 
         classifier = MedicalClassifier()
     
@@ -81,38 +71,42 @@ class HTMLParser():
         html = res.read()
         soup = bs4.BeautifulSoup(html, 'html5lib')
     
-        # extract articles
-        for tag in soup.select(HTMLParser.selector[query.source]):
-            skip = False
+        # extract papers
+        for tag in soup.select(HTMLParser.selector[conference.source]):
             title = tag.getText()
             if title != prev_title:
                 n_total += 1
                 prev_title = title
-                '''
-                if query.config.all or classifier.title_is_medical(title):
-                    url = HTMLParser.url_getter[query.source](tag)                
-                    if url is None:
-                        continue
-                    else:
-                        article = Article(title=title, url=url, conference_name=query.conference_name, year=query.year)
-                        articles.append(article)
-                '''
 
-                url = HTMLParser.url_getter[query.source](tag)                
+                url = HTMLParser.url_getter[conference.source](tag)                
                 if url is None:
                     continue
                 else:
-                    article = Article(title=title, url=url, conference_name=query.conference_name, year=query.year)
-                    article.medical = classifier.title_is_medical(article.title)
-                    articles.append(article)
+                    paper = Paper(title=title, url=url, conference_name=conference.conference_name, year=conference.year)
+                    paper.medical = classifier.title_is_medical(paper.title)
+                    papers.append(paper)
                 
-            if not query.config.quiet:
-                sys.stdout.write('\rDownloading... {} papers'.format(n_total))
+            if not conference.config.quiet:
+                sys.stdout.write('\rDownloading from {} {} ... {} papers'.format(conference.conference_name.upper(), conference.year, n_total))
                 sys.stdout.flush()
 
+        if not conference.config.quiet:    
+            print('\rDownloading from {} {} ... {} papers Complete!'.format(conference.conference_name.upper(), conference.year, n_total))
+
         # return OrderedDict
-        return articles
+        return papers
                 
+
+
+class Paper():
+    def __init__(self, title='', author=[], abstract='', conference_name='', year=0, url=''):
+        self.title = title
+        self.author = author
+        self.abstract = abstract
+        self.conference_name = conference_name
+        self.year = year
+        self.url = url
+        self.medical = False
 
 
     
@@ -128,6 +122,8 @@ class Conference(threading.Thread):
 
     url_container = { 'aclweb' : 'https://aclweb.org/anthology/events/{0}-{1}',\
                       'dblp' : 'https://dblp.org/db/conf/{0}/{0}{1}.html'}
+
+    parser = HTMLParser()
         
     def __init__(self, conference_name, year):
         super().__init__()
@@ -141,8 +137,10 @@ class Conference(threading.Thread):
         self.conference_name = conference_name
         self.year = year
         self.config = None
-        self.parser = None
-        self.articles = []
+        self.papers = []
+        self.n_papers = 0
+        self.medical_ai_papers = []
+        self.n_medical_ai_papers = 0
         try:
             self.source = Conference.source_map[self.conference_name]
             self.url = Conference.url_container[self.source].format(self.conference_name, self.year)
@@ -160,11 +158,49 @@ class Conference(threading.Thread):
         print('Connecting for {} {} ...'.format(self.conference_name.upper(), self.year))
         try:
             with urllib.request.urlopen(self.url) as res:
-                self.articles = self.parser.parse(res, self)
+                self.papers = Conference.parser.parse(res, self)
+                self.n_papers = len(self.papers)
+                self.medical_ai_papers = list(filter(lambda paper: paper.medical, self.papers))
+                self.n_medical_ai_papers = len(self.medical_ai_papers)
         except urllib.error.HTTPError as err:
             print('Error: {} {}'.format(err.code, err.reason))
         except urllib.error.URLError as err:
             print('Error: {}'.format(err.reason))
+
+    def catalog(self, config=Config()):
+        if self.papers:
+            if config.markdown:
+                separator = '\n\n'
+                if config.url_only:
+                    info_container = '[{1}]({1})'
+                else:
+                    info_container = '[{0}]({1})'
+            elif config.html:
+                separator = '<br/>\n\n'
+                if config.url_only:
+                    info_container = '<a href="{1}" target="_blank" alt="{1}">{1}</a>'
+                else:
+                    info_container = '<a href="{1}" target="_blank" alt="{0}">{0}</a>'
+            else:
+                separator = '\n\n'
+                if config.title_only:
+                    info_container = '{0}'
+                elif config.url_only:
+                    info_container = '{1}'
+                else:
+                    info_container = '{0}\n{1}'
+
+            if config.all:
+                output = separator.join([ info_container.format(paper.title.replace('"', "'"), paper.url) for paper in self.papers ] + [''])
+            else:
+                output = separator.join([ info_container.format(paper.title.replace('"', "'"), paper.url) for paper in self.medical_ai_papers ] + [''])
+
+        else:
+            output = 'No medical-like AI papers found.'
+
+        return output
+
+
 
         
 
@@ -205,91 +241,46 @@ class Query():
             self.year = year
 
         self.conferences = []
-        self.result = {}
         self.parser = HTMLParser()
         
         for c in self.conference_names:
             for y in self.year:
-                query = Conference(c.lower(), str(y))
-                self.conferences.append(query)
+                sub_query = Conference(c.lower(), str(y))
+                self.conferences.append(sub_query)
 
     def search(self, config=Config()):
         # throw HTTP request
+        for sub_query in self.conferences:
+            sub_query.config = config
+            sub_query.start()
+        for sub_query in self.conferences:
+            sub_query.join()
 
-        parser = HTMLParser()
-        for cq in self.conferences:
-            cq.config = config
-            cq.parser = self.parser
-            cq.out = self.result
-            cq.start()
-        for cq in self.conferences:
-            cq.join()
-        
+    def print(self, config=Config()):        
         # prepare output display
         message = ''
-        output = ''
-
-        seps = '=' * 35
+        seps = '\n' + '=' * 35 + '\n'
         
+
+        if not config.quiet:
+            message += seps
+            for conference in self.conferences:
+                message += '\n{} {}\n\n'.format(conference.conference_name.upper(), conference.year)
+                message += conference.catalog(config=config)
+            message += seps
+
         for conference in self.conferences:
-            output += '{} {}\n\n'.format(conference.conference_name.upper(), conference.year)
-
-            
-            if conference.articles:
-                if conference.config.markdown:
-                    separator = '\n'
-                    if conference.config.url_only:
-                        info_container = '[{1}]({1})'
-                    else:
-                        info_container = '[{0}]({1})'
-                elif conference.config.html:
-                    separator = '<br/>\n'
-                    if conference.config.url_only:
-                        info_container = '<a href="{1}" target="_blank" alt="{1}">{1}</a>'
-                    else:
-                        info_container = '<a href="{1}" target="_blank" alt="{0}">{0}</a>'
-                else:
-                    separator = '\n'
-                    if conference.config.title_only:
-                        info_container = '{0}'
-                    elif conference.config.url_only:
-                        info_container = '{1}'
-                    else:
-                        info_container = '{0}\n{1}'
-                output += separator.join([ info_container.format(article.title.replace('"', "'"), article.url) if article.medical or conference.config.all else '' for article in conference.articles ])
-
+            if not conference.config.all:
+                message += 'Medical-like AI papers in {} {}: {} / {}\n'.format(conference.conference_name.upper(), conference.year, conference.n_medical_ai_papers, conference.n_papers)
             else:
-                output += 'No medical-like AI papers found.'
+                message += 'All papers in {} {}: {}\n'.format(conference.conference_name.upper(), conference.year, conference.n_papers)
 
-        for conference in self.conferences:                                
-            if conference.config.quiet:
-                if conference.articles:
-                    if not conference.config.all:
-                        print('Medical-like AI papers in {} {}: {}'.format(conference.conference_name.upper(), conference.year, len(conference.articles)))
-                    else:
-                        print('All papers in {} {}: {}'.format(conference.conference_name.upper(), conference.year, len(conference.articles)))
-                else:
-                    print(output)
-            else:
-                sys.stdout.write('\n')
-                if conference.articles:
-                    print(seps)
-                    print(output)
-                    print(seps)
-                    if not conference.config.all:
-                        print('Medical-like AI papers in {} {}: {}'.format(conference.conference_name.upper(), conference.year, len(conference.articles)))
-                    else:
-                        print('All papers in {} {}: {}'.format(conference.conference_name.upper(), conference.year, len(conference.articles)))
-                        print(seps)
-                else:
-                    print(output)
-            
-            # copy onto clipboard if needed
-            if conference.config.copy:
-                pyperclip.copy(output)
-                print(' * * * Copied this result to clipboard * * *')
+        print(message)
 
-        return self.result
+        # copy onto clipboard if needed
+        if config.copy:
+            pyperclip.copy(message)
+            print(' * * * Copied this result to clipboard * * *')
     
 
 
@@ -340,3 +331,4 @@ if __name__ == '__main__':
 
     query = Query(config.conferences, config.years)
     query.search(config)
+    query.print(config)
