@@ -43,6 +43,8 @@ for conference in result:
     for paper in conference.medical_ai_papers:
         print(paper.title)
         print(paper.url)
+        print(paper.author)     # list ['author1', 'author2', ... ]
+        print(paper.abstract)
 ```
 
 Get information of medical-like & non-medical-like AI papers:
@@ -54,6 +56,8 @@ for conference in result:
     for paper in conference.papers:
         print(paper.title)
         print(paper.url)
+        print(paper.author)     # list ['author1', 'author2', ... ]
+        print(paper.abstract)
         print(paper.medical)  # True or False
 ```
 

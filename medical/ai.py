@@ -52,8 +52,24 @@ class HTMLParser():
     # process received HTTP response
 
     # class variables
+    tag_selector = {'aclweb' : 'p[class="d-sm-flex align-items-stretch"]',\
+                    'dblp' : 'span[class="title"]'}
+
+    title_from_tag = {'aclweb' : lambda tag: tag.find_all('span')[1].a.getText(),\
+                      'dblp' : lambda tag: tag.getText()}
+
+    url_from_tag = {'aclweb' : lambda tag: tag.span.a['href'] if tag.span.a['href'].startswith('https://') else None,\
+                    'dblp' : lambda tag: tag.parent.parent.contents[2].ul.li.div.a['href']}
+
+    author_from_tag = {'aclweb' : lambda tag: [ t.getText() for t in tag.find_all('span')[1].find_all('a')[1:] ],\
+                       'dblp' : None}
+
+    abstract_from_tag = {'aclweb' : lambda tag: tag.find_next('div').div.getText(),\
+                         'dblp' : None}
+
     selector = {'aclweb' : 'a[class="align-middle"]',\
                 'dblp' : 'span[class="title"]'}
+
     url_getter = {'aclweb' : lambda tag: 'https://aclweb.org' + tag.attrs['href'] if tag.attrs['href'].startswith('/anthology/paper') else None,\
                   'dblp' : lambda tag: tag.parent.parent.contents[2].ul.li.div.a['href']}
     
@@ -72,17 +88,23 @@ class HTMLParser():
         soup = bs4.BeautifulSoup(html, 'html5lib')
     
         # extract papers
-        for tag in soup.select(HTMLParser.selector[conference.source]):
-            title = tag.getText()
+        for tag in soup.select(HTMLParser.tag_selector[conference.source]):
+            title = HTMLParser.title_from_tag[conference.source](tag) 
             if title != prev_title:
                 n_total += 1
                 prev_title = title
-
-                url = HTMLParser.url_getter[conference.source](tag)                
+                url = HTMLParser.url_from_tag[conference.source](tag)                
                 if url is None:
                     continue
                 else:
-                    paper = Paper(title=title, url=url, conference_name=conference.conference_name, year=conference.year)
+                    #print(tag.find_all['span'][1].find_all['a'])
+                    paper = Paper()
+                    paper.title = title
+                    paper.url = url
+                    paper.conference_name = conference.conference_name
+                    paper.year = conference.year
+                    paper.author = HTMLParser.author_from_tag[conference.source](tag)
+                    paper.abstract = HTMLParser.abstract_from_tag[conference.source](tag)
                     paper.medical = classifier.title_is_medical(paper.title)
                     papers.append(paper)
                 
@@ -167,6 +189,9 @@ class Conference(threading.Thread):
         except urllib.error.URLError as err:
             print('Error: {}'.format(err.reason))
 
+    def get_abstract(self):
+        pass
+
     def catalog(self, config=Config()):
         if self.papers:
             if config.markdown:
@@ -188,12 +213,12 @@ class Conference(threading.Thread):
                 elif config.url_only:
                     info_container = '{1}'
                 else:
-                    info_container = '{0}\n{1}'
+                    info_container = '{0}\n{2}\n{1}'
 
             if config.all:
-                output = separator.join([ info_container.format(paper.title.replace('"', "'"), paper.url) for paper in self.papers ] + [''])
+                output = separator.join([ info_container.format(paper.title.replace('"', "'"), paper.url, ', '.join(paper.author)) for paper in self.papers ] + [''])
             else:
-                output = separator.join([ info_container.format(paper.title.replace('"', "'"), paper.url) for paper in self.medical_ai_papers ] + [''])
+                output = separator.join([ info_container.format(paper.title.replace('"', "'"), paper.url, ', '.join(paper.author)) for paper in self.medical_ai_papers ] + [''])
 
         else:
             output = 'No medical-like AI papers found.'
