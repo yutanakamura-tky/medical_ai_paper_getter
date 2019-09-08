@@ -20,55 +20,37 @@ Import module:
 import medical.ai
 ```
 
-To get medical-like AI papers in ACL 2019, create a Query instance and use .search() method:
+To get medical-like AI papers in CVPR 2017 & 2018, create a Query instance and use .search() method:
 
 ```Python3
-query = medical.ai.Query(conference='cvpr', year=2018)
+query = medical.ai.Query(conference='cvpr', year=[2017, 2018])
 result = query.search()
 ```
 
-With titles and URLs on standard output, you obtain information of papers as a list of Article object:
-
 ```
+Connecting for CVPR 2017 ...
 Connecting for CVPR 2018 ...
-Searching... 13 match / 980
-===================================
-Clinical Skin Lesion Diagnosis Using Representations Inspired by Dermatologist Criteria.
-http://openaccess.thecvf.com/content_cvpr_2018/html/Yang_Clinical_Skin_Lesion_CVPR_2018_paper.html
-
-    ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
-
-Anatomical Priors in Convolutional Networks for Unsupervised Biomedical Segmentation.
-http://openaccess.thecvf.com/content_cvpr_2018/html/Dalca_Anatomical_Priors_in_CVPR_2018_paper.html
-===================================
-Medical-like AI papers in CVPR 2018: 13 / 980
-===================================
+Download from CVPR 2017 ... 784 papers Complete!
+Download from CVPR 2018 ... 980 papers Complete!
 ```
 
 ```Python3
-for article in result[0]:
-    print(article.title)
-    print(article.url)
+cvpr_2017 = result[0]
+for paper in cvpr_2017.papers:
+    print(paper.title)
+    print(paper.url)
 ```
 
-```
-Clinical Skin Lesion Diagnosis Using Representations Inspired by Dermatologist Criteria.
-http://openaccess.thecvf.com/content_cvpr_2018/html/Yang_Clinical_Skin_Lesion_CVPR_2018_paper.html
 
-    ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
-
-Anatomical Priors in Convolutional Networks for Unsupervised Biomedical Segmentation.
-http://openaccess.thecvf.com/content_cvpr_2018/html/Dalca_Anatomical_Priors_in_CVPR_2018_paper.html
-```
 
 ### Quiet Mode
 
-If you want the result to be more quiet, use config as this:
+If you want standard output to be more quiet, use config as this:
 ```Python3
 import medical.ai
-config = medical.ai.Config(quiet=True)
-query = medical.ai.Query(conference='cvpr', year=2018)
-articles = query.search(config)
+myconfig = medical.ai.Config(quiet=True)
+query = medical.ai.Query(conference='cvpr', year=[2017, 2018])
+result = query.search(config=myconfig)
 ```
 
 
@@ -78,133 +60,94 @@ articles = query.search(config)
 
 # Usage(2): via command-line
 ### Overview
-Run `medical_ai.py` on the shell:
+Run `medical/ai.py` on the shell:
 ```
 python3 medical/ai.py <CONFERENCE> <YEAR>
 ```
 
-e.g. For `'nips 2018'`, you get 11 medical-like conference papers:
+e.g. For `'cvpr 2017'`, you get 8 medical-like conference papers:
 ```
-python3 medical/ai.py nips 2018
-Connecting...
-Searching... 11 matches / 1011
+python3 medical/ai.py cvpr 2017
+Connecting for CVPR 2017 ...
+Downloading from CVPR 2017 ... 784 papers Complete!
 ===================================
-Hybrid Retrieval-Generation Reinforced Agent for Medical Image Report Generation.
-http://papers.nips.cc/paper/7426-hybrid-retrieval-generation-reinforced-agent-for-medical-image-report-generation
 
-Representation Learning for Treatment Effect Estimation from Observational Data.
-http://papers.nips.cc/paper/7529-representation-learning-for-treatment-effect-estimation-from-observational-data
+CVPR 2017
 
-Lifelong Inverse Reinforcement Learning.
-http://papers.nips.cc/paper/7702-lifelong-inverse-reinforcement-learning
+Direct Photometric Alignment by Mesh Deformation.
+https://doi.org/10.1109/CVPR.2017.289
 
-MiME: Multilevel Medical Embedding of Electronic Health Records for Predictive Healthcare.
-http://papers.nips.cc/paper/7706-mime-multilevel-medical-embedding-of-electronic-health-records-for-predictive-healthcare
+ChestX-Ray8: Hospital-Scale Chest X-Ray Database and Benchmarks on Weakly-Supervised Classification and Localization of Common Thorax Diseases.
+https://doi.org/10.1109/CVPR.2017.369
 
-Mental Sampling in Multimodal Representations.
-http://papers.nips.cc/paper/7817-mental-sampling-in-multimodal-representations
+MDNet: A Semantically and Visually Interpretable Medical Image Diagnosis Network.
+https://doi.org/10.1109/CVPR.2017.378
 
-REFUEL: Exploring Sparse Features in Deep Reinforcement Learning for Fast Disease Diagnosis.
-http://papers.nips.cc/paper/7962-refuel-exploring-sparse-features-in-deep-reinforcement-learning-for-fast-disease-diagnosis
+Joint Sequence Learning and Cross-Modality Convolution for 3D Biomedical Segmentation.
+https://doi.org/10.1109/CVPR.2017.398
 
-Forecasting Treatment Responses Over Time Using Recurrent Marginal Structural Networks.
-http://papers.nips.cc/paper/7977-forecasting-treatment-responses-over-time-using-recurrent-marginal-structural-networks
+Fine-Tuning Convolutional Neural Networks for Biomedical Image Analysis: Actively and Incrementally.
+https://doi.org/10.1109/CVPR.2017.506
 
-Does mitigating ML's impact disparity require treatment disparity?
-http://papers.nips.cc/paper/8035-does-mitigating-mls-impact-disparity-require-treatment-disparity
+Simultaneous Super-Resolution and Cross-Modality Synthesis of 3D Medical Images Using Weakly-Supervised Joint Convolutional Sparse Coding.
+https://doi.org/10.1109/CVPR.2017.613
 
-HOUDINI: Lifelong Learning as Program Synthesis.
-http://papers.nips.cc/paper/8086-houdini-lifelong-learning-as-program-synthesis
+Multiple-Scattering Microphysics Tomography.
+https://doi.org/10.1109/CVPR.2017.614
 
-Bayesian multi-domain learning for cancer subtype discovery from next-generation sequencing count data.
-http://papers.nips.cc/paper/8125-bayesian-multi-domain-learning-for-cancer-subtype-discovery-from-next-generation-sequencing-count-data
+Expert Gate: Lifelong Learning with a Network of Experts.
+https://doi.org/10.1109/CVPR.2017.753
 
-Life-Long Disentangled Representation Learning with Cross-Domain Latent Homologies.
-http://papers.nips.cc/paper/8193-life-long-disentangled-representation-learning-with-cross-domain-latent-homologies
+
 ===================================
-Medical-like AI papers in NIPS 2018: 11 / 1011
-===================================
+Medical-like AI papers in CVPR 2017: 8 / 784
+
 ```
 
-Multiple conferences and years are also available:
+Use `-m` or `-markdown` option to display result as markdown links:
 
 ```
-python3 medical/ai.py <CONFERENCE1> <CONFERENCE2> ... <YEAR1> <YEAR2> ...
-```
-
-e.g. For ACL 2018 & ACL 2019 & NAACL 2018 & NAACL 2019, input `python3 medical/ai.py acl naacl 2018 2019`.
-
-
-### Options
-
-
-Use `--html` option to display result as HTML link <a> tags:
-
-```
-python3 medical/ai.py nips 2018 --html
-Connecting...
-Searching... 11 match / 1011
+python3 medical/ai.py cvpr 2017 -m
+Connecting for CVPR 2017 ...
+Downloading from CVPR 2017 ... 784 papers Complete!
 ===================================
-<a href="http://papers.nips.cc/paper/7426-hybrid-retrieval-generation-reinforced-agent-for-medical-image-report-generation" target="_blank" alt="Hybrid Retrieval-Generation Reinforced Agent for Medical Image Report Generation.">Hybrid Retrieval-Generation Reinforced Agent for Medical Image Report Generation.</a><br/>
-<a href="http://papers.nips.cc/paper/7529-representation-learning-for-treatment-effect-estimation-from-observational-data" target="_blank" alt="Representation Learning for Treatment Effect Estimation from Observational Data.">Representation Learning for Treatment Effect Estimation from Observational Data.</a><br/>
-<a href="http://papers.nips.cc/paper/7702-lifelong-inverse-reinforcement-learning" target="_blank" alt="Lifelong Inverse Reinforcement Learning.">Lifelong Inverse Reinforcement Learning.</a><br/>
-<a href="http://papers.nips.cc/paper/7706-mime-multilevel-medical-embedding-of-electronic-health-records-for-predictive-healthcare" target="_blank" alt="MiME: Multilevel Medical Embedding of Electronic Health Records for Predictive Healthcare.">MiME: Multilevel Medical Embedding of Electronic Health Records for Predictive Healthcare.</a><br/>
-<a href="http://papers.nips.cc/paper/7817-mental-sampling-in-multimodal-representations" target="_blank" alt="Mental Sampling in Multimodal Representations.">Mental Sampling in Multimodal Representations.</a><br/>
-<a href="http://papers.nips.cc/paper/7962-refuel-exploring-sparse-features-in-deep-reinforcement-learning-for-fast-disease-diagnosis" target="_blank" alt="REFUEL: Exploring Sparse Features in Deep Reinforcement Learning for Fast Disease Diagnosis.">REFUEL: Exploring Sparse Features in Deep Reinforcement Learning for Fast Disease Diagnosis.</a><br/>
-<a href="http://papers.nips.cc/paper/7977-forecasting-treatment-responses-over-time-using-recurrent-marginal-structural-networks" target="_blank" alt="Forecasting Treatment Responses Over Time Using Recurrent Marginal Structural Networks.">Forecasting Treatment Responses Over Time Using Recurrent Marginal Structural Networks.</a><br/>
-<a href="http://papers.nips.cc/paper/8035-does-mitigating-mls-impact-disparity-require-treatment-disparity" target="_blank" alt="Does mitigating ML's impact disparity require treatment disparity?">Does mitigating ML's impact disparity require treatment disparity?</a><br/>
-<a href="http://papers.nips.cc/paper/8086-houdini-lifelong-learning-as-program-synthesis" target="_blank" alt="HOUDINI: Lifelong Learning as Program Synthesis.">HOUDINI: Lifelong Learning as Program Synthesis.</a><br/>
-<a href="http://papers.nips.cc/paper/8125-bayesian-multi-domain-learning-for-cancer-subtype-discovery-from-next-generation-sequencing-count-data" target="_blank" alt="Bayesian multi-domain learning for cancer subtype discovery from next-generation sequencing count data.">Bayesian multi-domain learning for cancer subtype discovery from next-generation sequencing count data.</a><br/>
-<a href="http://papers.nips.cc/paper/8193-life-long-disentangled-representation-learning-with-cross-domain-latent-homologies" target="_blank" alt="Life-Long Disentangled Representation Learning with Cross-Domain Latent Homologies.">Life-Long Disentangled Representation Learning with Cross-Domain Latent Homologies.</a>
-===================================
-Medical-like AI papers in NIPS 2018: 11 / 1011
-===================================
-```
 
-Use `--markdown` option to display result as markdown links:
+CVPR 2017
 
-```
-python3 medical/ai.py nips 2018 --markdown
-Connecting...
-Searching... 11 match / 1011
+[Direct Photometric Alignment by Mesh Deformation.](https://doi.org/10.1109/CVPR.2017.289)
+
+[ChestX-Ray8: Hospital-Scale Chest X-Ray Database and Benchmarks on Weakly-Supervised Classification and Localization of Common Thorax Diseases.](https://doi.org/10.1109/CVPR.2017.369)
+
+    ...
+
+[Expert Gate: Lifelong Learning with a Network of Experts.](https://doi.org/10.1109/CVPR.2017.753)
+
 ===================================
-[Hybrid Retrieval-Generation Reinforced Agent for Medical Image Report Generation.](http://papers.nips.cc/paper/7426-hybrid-retrieval-generation-reinforced-agent-for-medical-image-report-generation)
-[Representation Learning for Treatment Effect Estimation from Observational Data.](http://papers.nips.cc/paper/7529-representation-learning-for-treatment-effect-estimation-from-observational-data)
-[Lifelong Inverse Reinforcement Learning.](http://papers.nips.cc/paper/7702-lifelong-inverse-reinforcement-learning)
-[MiME: Multilevel Medical Embedding of Electronic Health Records for Predictive Healthcare.](http://papers.nips.cc/paper/7706-mime-multilevel-medical-embedding-of-electronic-health-records-for-predictive-healthcare)
-[Mental Sampling in Multimodal Representations.](http://papers.nips.cc/paper/7817-mental-sampling-in-multimodal-representations)
-[REFUEL: Exploring Sparse Features in Deep Reinforcement Learning for Fast Disease Diagnosis.](http://papers.nips.cc/paper/7962-refuel-exploring-sparse-features-in-deep-reinforcement-learning-for-fast-disease-diagnosis)
-[Forecasting Treatment Responses Over Time Using Recurrent Marginal Structural Networks.](http://papers.nips.cc/paper/7977-forecasting-treatment-responses-over-time-using-recurrent-marginal-structural-networks)
-[Does mitigating ML's impact disparity require treatment disparity?](http://papers.nips.cc/paper/8035-does-mitigating-mls-impact-disparity-require-treatment-disparity)
-[HOUDINI: Lifelong Learning as Program Synthesis.](http://papers.nips.cc/paper/8086-houdini-lifelong-learning-as-program-synthesis)
-[Bayesian multi-domain learning for cancer subtype discovery from next-generation sequencing count data.](http://papers.nips.cc/paper/8125-bayesian-multi-domain-learning-for-cancer-subtype-discovery-from-next-generation-sequencing-count-data)
-[Life-Long Disentangled Representation Learning with Cross-Domain Latent Homologies.](http://papers.nips.cc/paper/8193-life-long-disentangled-representation-learning-with-cross-domain-latent-homologies)
-===================================
-Medical-like AI papers in NIPS 2018: 11 / 1011
-===================================
+Medical-like AI papers in CVPR 2017: 8 / 784
 ```
 
 Use `--copy` option to copy result onto clipboard:
 
 ```
-python3 medical/ai.py nips 2018 --markdown --copy
-Connecting...
-Searching... 11 match / 1011
+python3 medical/ai.py cvpr 2017 -m --copy
+Connecting for CVPR 2017 ...
+Downloading from CVPR 2017 ... 784 papers Complete!
 ===================================
-[Hybrid Retrieval-Generation Reinforced Agent for Medical Image Report Generation.](http://papers.nips.cc/paper/7426-hybrid-retrieval-generation-reinforced-agent-for-medical-image-report-generation)
-[Representation Learning for Treatment Effect Estimation from Observational Data.](http://papers.nips.cc/paper/7529-representation-learning-for-treatment-effect-estimation-from-observational-data)
-[Lifelong Inverse Reinforcement Learning.](http://papers.nips.cc/paper/7702-lifelong-inverse-reinforcement-learning)
-[MiME: Multilevel Medical Embedding of Electronic Health Records for Predictive Healthcare.](http://papers.nips.cc/paper/7706-mime-multilevel-medical-embedding-of-electronic-health-records-for-predictive-healthcare)
-[Mental Sampling in Multimodal Representations.](http://papers.nips.cc/paper/7817-mental-sampling-in-multimodal-representations)
-[REFUEL: Exploring Sparse Features in Deep Reinforcement Learning for Fast Disease Diagnosis.](http://papers.nips.cc/paper/7962-refuel-exploring-sparse-features-in-deep-reinforcement-learning-for-fast-disease-diagnosis)
-[Forecasting Treatment Responses Over Time Using Recurrent Marginal Structural Networks.](http://papers.nips.cc/paper/7977-forecasting-treatment-responses-over-time-using-recurrent-marginal-structural-networks)
-[Does mitigating ML's impact disparity require treatment disparity?](http://papers.nips.cc/paper/8035-does-mitigating-mls-impact-disparity-require-treatment-disparity)
-[HOUDINI: Lifelong Learning as Program Synthesis.](http://papers.nips.cc/paper/8086-houdini-lifelong-learning-as-program-synthesis)
-[Bayesian multi-domain learning for cancer subtype discovery from next-generation sequencing count data.](http://papers.nips.cc/paper/8125-bayesian-multi-domain-learning-for-cancer-subtype-discovery-from-next-generation-sequencing-count-data)
-[Life-Long Disentangled Representation Learning with Cross-Domain Latent Homologies.](http://papers.nips.cc/paper/8193-life-long-disentangled-representation-learning-with-cross-domain-latent-homologies)
+
+CVPR 2017
+
+[Direct Photometric Alignment by Mesh Deformation.](https://doi.org/10.1109/CVPR.2017.289)
+
+[ChestX-Ray8: Hospital-Scale Chest X-Ray Database and Benchmarks on Weakly-Supervised Classification and Localization of Common Thorax Diseases.](https://doi.org/10.1109/CVPR.2017.369)
+
+[MDNet: A Semantically and Visually Interpretable Medical Image Diagnosis Network.](https://doi.org/10.1109/CVPR.2017.378)
+
+        ...
+
+[Expert Gate: Lifelong Learning with a Network of Experts.](https://doi.org/10.1109/CVPR.2017.753)
+
 ===================================
-Medical-like AI papers in NIPS 2018: 11 / 1011
-===================================
+Medical-like AI papers in CVPR 2017: 8 / 784
  * * * Copied this result to clipboard * * *
 ```
 
