@@ -28,17 +28,33 @@ result = query.search()
 ```
 
 ```
-Connecting for CVPR 2017 ...
-Connecting for CVPR 2018 ...
-Download from CVPR 2017 ... 784 papers Complete!
-Download from CVPR 2018 ... 980 papers Complete!
+>>> Connecting for CVPR 2017 ...
+>>> Connecting for CVPR 2018 ...
+>>> Download from CVPR 2017 ... 784 papers Complete!
+>>> Download from CVPR 2018 ... 980 papers Complete!
 ```
 
+Get information of medical-like AI papers:
+
 ```Python3
-cvpr_2017 = result[0]
-for paper in cvpr_2017.papers:
-    print(paper.title)
-    print(paper.url)
+for conference in result:
+    print(conference.conference_name)
+    print(conference.year)
+    for paper in conference.medical_ai_papers:
+        print(paper.title)
+        print(paper.url)
+```
+
+Get information of medical-like & non-medical-like AI papers:
+
+```Python3
+for conference in result:
+    print(conference.conference_name)
+    print(conference.year)
+    for paper in conference.papers:
+        print(paper.title)
+        print(paper.url)
+        print(paper.medical)  # True or False
 ```
 
 
