@@ -64,7 +64,7 @@ class HTMLParser():
     author_from_tag = {'aclweb' : lambda tag: [ t.getText() for t in tag.find_all('span')[1].find_all('a')[1:] ],\
                        'dblp' : None}
 
-    abstract_from_tag = {'aclweb' : lambda tag: tag.find_next('div').div.getText(),\
+    abstract_from_tag = {'aclweb' : lambda tag: tag.find_next('div').div.getText() if hasattr(tag.find_next('div').div, 'getText') else '',\
                          'dblp' : None}
     
     def __init__(self):
@@ -88,7 +88,7 @@ class HTMLParser():
                 if title != prev_title and not title.startswith('Proceedings of'):
                     n_total += 1
                     prev_title = title
-                    url = HTMLParser.url_from_tag[conference.source](tag)                
+                    url = HTMLParser.url_from_tag[conference.source](tag)          
                     if url is None:
                         continue
                     else:
