@@ -66,12 +66,6 @@ class HTMLParser():
 
     abstract_from_tag = {'aclweb' : lambda tag: tag.find_next('div').div.getText(),\
                          'dblp' : None}
-
-    selector = {'aclweb' : 'a[class="align-middle"]',\
-                'dblp' : 'span[class="title"]'}
-
-    url_getter = {'aclweb' : lambda tag: 'https://aclweb.org' + tag.attrs['href'] if tag.attrs['href'].startswith('/anthology/paper') else None,\
-                  'dblp' : lambda tag: tag.parent.parent.contents[2].ul.li.div.a['href']}
     
     def __init__(self):
         pass
@@ -89,28 +83,29 @@ class HTMLParser():
     
         # extract papers
         for tag in soup.select(HTMLParser.tag_selector[conference.source]):
-            title = HTMLParser.title_from_tag[conference.source](tag) 
-            if title != prev_title:
-                n_total += 1
-                prev_title = title
-                url = HTMLParser.url_from_tag[conference.source](tag)                
-                if url is None:
-                    continue
-                else:
-                    #print(tag.find_all['span'][1].find_all['a'])
-                    paper = Paper()
-                    paper.title = title
-                    paper.url = url
-                    paper.conference_name = conference.conference_name
-                    paper.year = conference.year
-                    paper.author = HTMLParser.author_from_tag[conference.source](tag)
-                    paper.abstract = HTMLParser.abstract_from_tag[conference.source](tag)
-                    paper.medical = classifier.title_is_medical(paper.title)
-                    papers.append(paper)
+            if tag is not None:
+                title = HTMLParser.title_from_tag[conference.source](tag) 
+                if title != prev_title and not title.startswith('Proceedings of'):
+                    n_total += 1
+                    prev_title = title
+                    url = HTMLParser.url_from_tag[conference.source](tag)                
+                    if url is None:
+                        continue
+                    else:
+                        #print(tag.find_all['span'][1].find_all['a'])
+                        paper = Paper()
+                        paper.title = title
+                        paper.url = url
+                        paper.conference_name = conference.conference_name
+                        paper.year = conference.year
+                        paper.author = HTMLParser.author_from_tag[conference.source](tag)
+                        paper.abstract = HTMLParser.abstract_from_tag[conference.source](tag)
+                        paper.medical = classifier.title_is_medical(paper.title)
+                        papers.append(paper)
                 
-            if not conference.config.quiet:
-                sys.stdout.write('\rDownloading from {} {} ... {} papers'.format(conference.conference_name.upper(), conference.year, n_total))
-                sys.stdout.flush()
+                if not conference.config.quiet:
+                    sys.stdout.write('\rDownloading from {} {} ... {} papers'.format(conference.conference_name.upper(), conference.year, n_total))
+                    sys.stdout.flush()
 
         if not conference.config.quiet:    
             print('\rDownloading from {} {} ... {} papers Complete!'.format(conference.conference_name.upper(), conference.year, n_total))
@@ -167,14 +162,7 @@ class Conference(threading.Thread):
             self.source = Conference.source_map[self.conference_name]
             self.url = Conference.url_container[self.source].format(self.conference_name, self.year)
         except KeyError:
-            seps = '=' * 35
-            print("Error: unavailable conference '{}'.".format(self.conference_name))
-            print(seps)
-            print('Available conferences:')
-            print('\tML, AI:\n\t\t{}'.format(', '.join(Conference.conference_map['ML'])))
-            print('\tCV:\n\t\t{}'.format(', '.join(Conference.conference_map['CV'])))
-            print('\tNLP:\n\t\t{}'.format(', '.join(Conference.conference_map['NLP'])))
-            print(seps)
+            print("Error: unavailable conference name '{}'.".format(self.conference_name))
 
     def run(self):
         print('Connecting for {} {} ...'.format(self.conference_name.upper(), self.year))
@@ -185,12 +173,16 @@ class Conference(threading.Thread):
                 self.medical_ai_papers = list(filter(lambda paper: paper.medical, self.papers))
                 self.n_medical_ai_papers = len(self.medical_ai_papers)
         except urllib.error.HTTPError as err:
-            print('Error: {} {}'.format(err.code, err.reason))
+            print('Error for {} {}: {} {}'.format(self.conference_name.upper(), self.year, err.code, err.reason))
         except urllib.error.URLError as err:
-            print('Error: {}'.format(err.reason))
+            print('Error for {} {}: {}'.format(self.conference_name.upper(), self.year, err.reason))
 
-    def get_abstract(self):
-        pass
+    def to_csv(self, path):
+        output = 'conference_name,year,title,author,url,abstract,medical\n'
+        for paper in self.papers:
+            output += '"{}","{}","{}","{}","{}","{}","{}"\n'.format(paper.conference_name.upper(), paper.year, paper.title.replace('"', "'"), ','.join(paper.author), paper.url, paper.abstract.replace('"', "'"), int(paper.medical))
+        with open(path, 'wt') as fileobj:
+            fileobj.write(output)
 
     def catalog(self, config=Config()):
         if self.papers:
@@ -265,21 +257,29 @@ class Query():
         else:
             self.year = year
 
-        self.conferences = []
+        self.result = []
         self.parser = HTMLParser()
         
         for c in self.conference_names:
             for y in self.year:
                 sub_query = Conference(c.lower(), str(y))
-                self.conferences.append(sub_query)
+                self.result.append(sub_query)
 
     def search(self, config=Config()):
         # throw HTTP request
-        for sub_query in self.conferences:
+        for sub_query in self.result:
             sub_query.config = config
             sub_query.start()
-        for sub_query in self.conferences:
+        for sub_query in self.result:
             sub_query.join()
+
+    def to_csv(self, path):
+        output = 'conference_name,year,title,author,url,abstract,medical\n'
+        for conference in self.result:
+            for paper in conference.papers:
+                output += '"{}","{}","{}","{}","{}","{}","{}"\n'.format(paper.conference_name.upper(), paper.year, paper.title.replace('"', "'"), ','.join(paper.author), paper.url, paper.abstract.replace('"', "'"), int(paper.medical))
+        with open(path, 'wt') as fileobj:
+            fileobj.write(output)
 
     def print(self, config=Config()):        
         # prepare output display
