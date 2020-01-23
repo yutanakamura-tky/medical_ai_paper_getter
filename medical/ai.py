@@ -55,10 +55,11 @@ class HTMLParser():
     tag_selector = {'aclweb' : 'p[class="d-sm-flex align-items-stretch"]',\
                     'dblp' : 'span[class="title"]'}
 
-    title_from_tag = {'aclweb' : lambda tag: tag.find_all('span')[1].a.getText(),\
+    title_from_tag = {'aclweb' : lambda tag: tag.find_all('span')[1].strong.a.getText(),\
                       'dblp' : lambda tag: tag.getText()}
 
-    url_from_tag = {'aclweb' : lambda tag: tag.span.a['href'] if tag.span.a['href'].startswith('https://') else None,\
+    url_from_tag = {'aclweb' : lambda tag: 'https://www.aclweb.org' + tag.find_all('span')[1].strong.a['href'] if tag.find_all('span')[1].strong.a['href'].startswith('/anthology/')\
+                                             else tag.find_all('span')[1].strong.a['href'],\
                     'dblp' : lambda tag: tag.parent.parent.contents[2].ul.li.div.a['href']}
 
     author_from_tag = {'aclweb' : lambda tag: [ t.getText() for t in tag.find_all('span')[1].find_all('a')[1:] ],\
